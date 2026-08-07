@@ -26,14 +26,17 @@ const CONFIG = {
 
   /* ---------------------------------------------------------------
      3) VIDEO VSL PRINCIPAL (el video que estás por armar)
-     Pegá el link de YouTube tal cual lo copiás del navegador.
-     Funciona con cualquiera de estos formatos:
+     Pegá el link de YouTube o de Google Drive tal cual lo copiás
+     del navegador. Funciona con cualquiera de estos formatos:
        https://www.youtube.com/watch?v=XXXXXXXXX
        https://youtu.be/XXXXXXXXX
+       https://drive.google.com/file/d/XXXXXXXXX/view
+     ⚠️ Si es de Google Drive, el archivo tiene que estar compartido
+        como "Cualquier persona con el enlace" para que se pueda ver.
      Si todavía no lo tenés, dejalo vacío ('') y aparece un cartel
      de "Próximamente".
      --------------------------------------------------------------- */
-  videoVSL: '',
+  videoVSL: 'https://drive.google.com/file/d/1rActwTqM-urIY1QHDmTcM30F_eFRbnxO/view?usp=sharing',
 
   /* ---------------------------------------------------------------
      4) TITULARES DE LA PORTADA (arriba del video)
