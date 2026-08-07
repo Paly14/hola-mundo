@@ -53,22 +53,28 @@ const CONFIG = {
      --------------------------------------------------------------- */
   casos: [
     {
-      video: 'https://youtu.be/JHRBHT35et8',
+      video: 'https://youtu.be/ZmXjDHxu9c8?si=8TG763TNtQ6My7CE',
       nombre: 'Alumno de Alpha Ecommerce',
-      titulo: 'Jona Tedesco',
+      titulo: 'Testimonio 1',
       descripcion: 'Escuchá en primera persona cómo le fue con Alpha Ecommerce.',
     },
     {
-      video: 'https://youtu.be/Bvy1VXwr26g',
+      video: 'https://youtu.be/ZR6YcCoPRmQ?si=8nTpYJ7l0wR0lbpH',
       nombre: 'Alumno de Alpha Ecommerce',
-      titulo: 'Boris',
+      titulo: 'Testimonio 2',
       descripcion: 'Su experiencia aplicando el sistema, en primera persona.',
     },
     {
-      video: 'https://youtu.be/K9x11x2u6oM',
+      video: 'https://youtu.be/H5uUXIg44Bk?si=4J0isgRcxkJDJGnr',
       nombre: 'Alumno de Alpha Ecommerce',
-      titulo: 'Sara',
+      titulo: 'Testimonio 3',
       descripcion: 'Otro resultado real de alguien que confió en el proceso.',
+    },
+    {
+      video: 'https://youtu.be/6N93SCuoymI?si=HpsOLImI31uuQy2F',
+      nombre: 'Alumno de Alpha Ecommerce',
+      titulo: 'Testimonio 4',
+      descripcion: 'Un caso más de alguien que ya está viendo resultados.',
     },
   ],
 
