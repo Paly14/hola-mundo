@@ -26,10 +26,33 @@
     return '';
   }
 
-  function ytIframe(url, title) {
-    const id = youtubeId(url);
-    if (!id) return null;
-    const src = 'https://www.youtube-nocookie.com/embed/' + id + '?rel=0';
+  /* --- Extrae el ID de un archivo de Google Drive --- */
+  function driveId(url) {
+    if (!url) return '';
+    const s = String(url).trim();
+    const patterns = [
+      /\/file\/d\/([a-zA-Z0-9_-]+)/, // drive.google.com/file/d/ID/view
+      /[?&]id=([a-zA-Z0-9_-]+)/,     // drive.google.com/open?id=ID  ·  uc?id=ID
+    ];
+    for (const p of patterns) {
+      const m = s.match(p);
+      if (m) return m[1];
+    }
+    return '';
+  }
+
+  /* --- Crea el <iframe> del video (YouTube o Google Drive) --- */
+  function videoIframe(url, title) {
+    const ytId = youtubeId(url);
+    const gdId = ytId ? '' : driveId(url);
+    let src;
+    if (ytId) {
+      src = 'https://www.youtube-nocookie.com/embed/' + ytId + '?rel=0';
+    } else if (gdId) {
+      src = 'https://drive.google.com/file/d/' + gdId + '/preview';
+    } else {
+      return null;
+    }
     const ifr = document.createElement('iframe');
     ifr.src = src;
     ifr.title = title || 'Video';
@@ -86,7 +109,7 @@
 
     /* Video VSL */
     const vslWrap = document.getElementById('vslWrap');
-    const ifr = ytIframe(CONFIG.videoVSL, 'Video principal ' + CONFIG.marca);
+    const ifr = videoIframe(CONFIG.videoVSL, 'Video principal ' + CONFIG.marca);
     if (ifr) {
       vslWrap.appendChild(ifr);
     } else {
@@ -94,7 +117,7 @@
         el(
           'div',
           'video-placeholder',
-          '<div class="play"></div><strong>Tu video llega pronto</strong><span>Pegá el link de YouTube en config.js → videoVSL</span>'
+          '<div class="play"></div><strong>Tu video llega pronto</strong><span>Pegá el link de YouTube o Google Drive en config.js → videoVSL</span>'
         )
       );
     }
@@ -112,7 +135,7 @@
     renderList('casosGrid', CONFIG.casos, function (caso) {
       const c = el('article', 'caso');
       const vid = el('div', 'caso__video');
-      const cifr = ytIframe(caso.video, caso.titulo);
+      const cifr = videoIframe(caso.video, caso.titulo);
       if (cifr) {
         vid.appendChild(cifr);
       } else {
