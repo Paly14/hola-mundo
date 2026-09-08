@@ -68,12 +68,12 @@ nombre y seguí igual desde el paso 2 — `setup()` arma la hoja solo.
 
 ## 5. Pegar la URL en la encuesta
 
-Abrí `index.html`, buscá el bloque `CONFIG` (arriba de todo en el `<script>`) y
-reemplazá el placeholder:
+✅ **Ya está hecho.** La URL del Web App quedó configurada en `index.html`.
+Solo tenés que volver acá si algún día rehacés la implementación y cambia la URL:
 
 ```js
 const CONFIG = {
-  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycb.../exec',
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzIPib.../exec',
   NOMBRE_MENTOR: 'Mariano',
 };
 ```
