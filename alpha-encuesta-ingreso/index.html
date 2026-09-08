@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Alpha Ecommerce — Encuesta de ingreso</title>
+<meta name="description" content="Contanos un poco de vos antes de arrancar con Alpha Ecommerce." />
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#0A0A0A" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0A0A0A;
+    --texto:#F5F5F5;
+    --acento:#F26B22;
+    --acento-oscuro:#D4551A;
+    --linea:rgba(245,245,245,.22);
+    --linea-fuerte:#F5F5F5;
+    --pill-bg:rgba(245,245,245,.04);
+    --pill-bg-sel:rgba(245,245,245,.12);
+    --tenue:rgba(245,245,245,.55);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+
+  html,body{margin:0;padding:0;}
+
+  body{
+    background:var(--bg);
+    color:var(--texto);
+    font-family:'Poppins',system-ui,-apple-system,'Segoe UI',sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    min-height:100dvh;
+  }
+
+  /* ---------- Barra de progreso ---------- */
+  .progreso{
+    position:fixed;top:0;left:0;right:0;height:4px;
+    background:rgba(245,245,245,.08);
+    z-index:50;
+  }
+  .progreso__barra{
+    height:100%;width:0%;
+    background:var(--acento);
+    transition:width .35s cubic-bezier(.2,.8,.3,1);
+  }
+
+  /* ---------- Layout ---------- */
+  .escena{
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:72px 20px 40px;
+    padding-bottom:calc(40px + env(safe-area-inset-bottom));
+  }
+
+  .tarjeta{
+    width:100%;
+    max-width:640px;
+    opacity:1;
+    transform:translateY(0);
+    transition:opacity .28s ease, transform .28s ease;
+  }
+  .tarjeta.saliendo{opacity:0;transform:translateY(-14px);}
+  .tarjeta.entrando{opacity:0;transform:translateY(14px);}
+
+  /* ---------- Cabecera de pregunta ---------- */
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:.8rem;font-weight:600;letter-spacing:.04em;
+    color:var(--acento);
+    border:1px solid rgba(242,107,34,.4);
+    background:rgba(242,107,34,.08);
+    border-radius:999px;
+    padding:4px 12px;
+    margin-bottom:16px;
+  }
+
+  .pregunta{
+    color:var(--acento);
+    font-size:1.5rem;
+    font-weight:600;
+    line-height:1.3;
+    margin:0 0 6px;
+    overflow-wrap:break-word;
+  }
+  .obligatorio{color:var(--acento);font-weight:600;}
+
+  .ayuda{
+    color:var(--tenue);
+    font-size:.85rem;
+    margin:0 0 20px;
+  }
+
+  /* ---------- Campos de texto ---------- */
+  .campo{
+    width:100%;
+    background:transparent;
+    color:var(--texto);
+    font-family:inherit;
+    font-size:1.05rem;
+    border:none;
+    border-bottom:2px solid var(--linea);
+    border-radius:0;
+    padding:10px 2px;
+    outline:none;
+    transition:border-color .2s ease;
+  }
+  .campo::placeholder{color:rgba(245,245,245,.3);}
+  .campo:focus{border-bottom-color:var(--acento);}
+  textarea.campo{
+    resize:vertical;
+    min-height:110px;
+    line-height:1.55;
+  }
+
+  select.campo{
+    border:2px solid var(--linea);
+    border-radius:12px;
+    padding:14px 40px 14px 14px;
+    background-color:rgba(245,245,245,.04);
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F26B22' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 12px center;
+    background-size:18px 18px;
+    -webkit-appearance:none;appearance:none;
+    cursor:pointer;
+  }
+  select.campo:focus{border-color:var(--acento);}
+  select.campo option{background:#141414;color:var(--texto);}
+
+  /* ---------- Opciones tipo píldora ---------- */
+  .opciones{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin:0 0 22px;
+    list-style:none;
+    padding:0;
+  }
+
+  .opcion{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    width:100%;
+    text-align:left;
+    font-family:inherit;
+    font-size:1rem;
+    line-height:1.4;
+    color:var(--texto);
+    background:var(--pill-bg);
+    border:1.5px solid var(--linea);
+    border-radius:14px;
+    padding:13px 16px;
+    cursor:pointer;
+    transition:border-color .18s ease, background-color .18s ease, transform .1s ease;
+    overflow-wrap:break-word;
+    word-break:break-word;
+  }
+  .opcion:hover{border-color:rgba(245,245,245,.5);}
+  .opcion:active{transform:scale(.995);}
+  .opcion:focus-visible{outline:2px solid var(--acento);outline-offset:2px;}
+  .opcion.sel{
+    border-color:var(--linea-fuerte);
+    background:var(--pill-bg-sel);
+  }
+
+  .letra{
+    flex:0 0 auto;
+    display:inline-flex;align-items:center;justify-content:center;
+    width:26px;height:26px;
+    border:1.5px solid var(--linea);
+    border-radius:7px;
+    font-size:.8rem;font-weight:600;
+    color:var(--tenue);
+    transition:border-color .18s ease,color .18s ease,background-color .18s ease;
+  }
+  .opcion.sel .letra{
+    border-color:var(--linea-fuerte);
+    color:var(--bg);
+    background:var(--linea-fuerte);
+  }
+  .opcion__txt{flex:1 1 auto;min-width:0;}
+
+  .otro-wrap{margin:-8px 0 22px;}
+
+  /* ---------- Botones ---------- */
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:inherit;
+    font-size:1rem;font-weight:600;
+    color:#fff;
+    background:var(--acento);
+    border:none;border-radius:10px;
+    padding:12px 26px;
+    cursor:pointer;
+    transition:background-color .18s ease, opacity .18s ease, transform .1s ease;
+  }
+  .btn:hover{background:var(--acento-oscuro);}
+  .btn:active{transform:scale(.985);}
+  .btn:focus-visible{outline:2px solid #fff;outline-offset:3px;}
+  .btn[disabled]{opacity:.55;cursor:not-allowed;}
+  .btn--grande{font-size:1.05rem;padding:14px 32px;}
+
+  .pie{
+    display:flex;align-items:center;gap:14px;
+    flex-wrap:wrap;
+  }
+  .tip{font-size:.78rem;color:var(--tenue);}
+  .tip kbd{
+    font-family:inherit;font-size:.72rem;
+    border:1px solid var(--linea);border-radius:5px;
+    padding:1px 6px;
+  }
+
+  .volver{
+    background:none;border:none;
+    color:var(--tenue);
+    font-family:inherit;font-size:.85rem;
+    cursor:pointer;padding:6px 0;
+    margin-top:18px;
+  }
+  .volver:hover{color:var(--texto);}
+
+  .error{
+    color:var(--acento);
+    font-size:.88rem;
+    font-weight:500;
+    margin:0 0 14px;
+    min-height:1.2em;
+  }
+
+  /* ---------- Bienvenida / final ---------- */
+  .titulo{
+    font-size:1.9rem;font-weight:700;line-height:1.25;
+    margin:0 0 14px;
+  }
+  .titulo .naranja{color:var(--acento);}
+  .bajada{
+    font-size:1.05rem;color:rgba(245,245,245,.8);
+    margin:0 0 30px;max-width:34em;
+  }
+
+  @media (max-width:420px){
+    .escena{padding:64px 18px 32px;}
+    .pregunta{font-size:1.28rem;}
+    .titulo{font-size:1.6rem;}
+    .bajada{font-size:.98rem;}
+    .btn--grande{width:100%;justify-content:center;}
+    .tip{display:none;}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .tarjeta,.progreso__barra{transition:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="progreso"><div class="progreso__barra" id="barra"></div></div>
+
+<main class="escena">
+  <div class="tarjeta" id="tarjeta"></div>
+</main>
+
+<script>
+/* =========================================================
+   CONFIG — editar acá
+   ========================================================= */
+const CONFIG = {
+  SCRIPT_URL: 'PEGAR_ACA_LA_URL_DEL_WEB_APP',
+  NOMBRE_MENTOR: 'Mariano',
+};
+
+const PLACEHOLDER_URL = 'PEGAR_ACA_LA_URL_DEL_WEB_APP';
+
+/* =========================================================
+   Países: Argentina primero, resto alfabético, "Otro" al final
+   ========================================================= */
+const PAISES = [
+  'Argentina',
+  'Bolivia','Brasil','Chile','Colombia','Costa Rica','Cuba','Ecuador','El Salvador',
+  'España','Guatemala','Honduras','México','Nicaragua','Panamá','Paraguay','Perú',
+  'Puerto Rico','República Dominicana','Uruguay','Venezuela',
+  'Otro'
+];
+
+/* =========================================================
+   Preguntas
+   ========================================================= */
+const PREGUNTAS = [
+  {
+    clave: 'nombre',
+    tipo: 'text',
+    texto: '¿Cuál es tu nombre completo?',
+    placeholder: 'Escribí tu respuesta acá…',
+    obligatoria: true
+  },
+  {
+    clave: 'edad',
+    tipo: 'single',
+    texto: '¿En qué rango de edad estás?',
+    opciones: ['18 a 24','25 a 34','35 a 44','45 a 54','55 o más'],
+    obligatoria: true
+  },
+  {
+    clave: 'pais',
+    tipo: 'select',
+    texto: '¿De qué país sos?',
+    opciones: PAISES,
+    obligatoria: true
+  },
+  {
+    clave: 'ciudad',
+    tipo: 'text',
+    texto: '¿En qué ciudad vivís?',
+    placeholder: 'Escribí tu respuesta acá…',
+    obligatoria: true
+  },
+  {
+    clave: 'situacion_familiar',
+    tipo: 'single',
+    texto: '¿Qué describe mejor tu situación actual?',
+    opciones: ['Soltero/a sin hijos','Soltero/a con hijos','En pareja sin hijos','En pareja con hijos'],
+    obligatoria: true
+  },
+  {
+    clave: 'situacion_laboral',
+    tipo: 'single',
+    texto: '¿Qué describe mejor tu situación laboral?',
+    opciones: ['Tengo un empleo','Tengo un emprendimiento','Tengo un empleo y un emprendimiento','No tengo ingresos estables hoy'],
+    obligatoria: true
+  },
+  {
+    clave: 'motivo',
+    tipo: 'single',
+    texto: '¿Cuál fue tu motivo para aprender a importar y vender online?',
+    opciones: [
+      'Tengo un empleo pero quiero hacer algo mío para tener libertad',
+      'Ya tengo un emprendimiento pero quiero escalarlo con importaciones',
+      'No tengo nada estable pero quiero empezar de cero a emprender',
+      'Otro'
+    ],
+    otro: { activadaPor: 'Otro', clave: 'motivo_otro', placeholder: 'Contanos cuál…' },
+    obligatoria: true
+  },
+  {
+    clave: 'tiempo_conoce',
+    tipo: 'single',
+    texto: '¿Desde cuándo conocés a ' + CONFIG.NOMBRE_MENTOR + ' y a Alpha Ecommerce?',
+    opciones: ['Hace menos de un mes','Entre 1 y 3 meses','Entre 3 y 6 meses','Más de 6 meses'],
+    obligatoria: true
+  },
+  {
+    clave: 'canal_contenido',
+    tipo: 'single',
+    texto: '¿Dónde ves mayormente el contenido de Alpha?',
+    opciones: ['Instagram','TikTok','YouTube','Facebook','Me lo recomendó alguien'],
+    obligatoria: true
+  },
+  {
+    clave: 'videos_vistos',
+    tipo: 'single',
+    texto: '¿Cuántos videos de ' + CONFIG.NOMBRE_MENTOR + ' viste antes de entrar (aprox)?',
+    opciones: ['Ninguno','1 ó 2','3 a 5','Más de 5 (perdí la cuenta)'],
+    obligatoria: false
+  },
+  {
+    clave: 'sueno',
+    tipo: 'textarea',
+    texto: 'Si este programa funcionara al 100% para vos, ¿qué sueño te ayudaría a cumplir?',
+    placeholder: 'Escribí tu respuesta acá…',
+    obligatoria: true
+  },
+  {
+    clave: 'preocupacion',
+    tipo: 'textarea',
+    texto: '¿Qué es lo que más te preocupa al emprender un negocio de importación?',
+    placeholder: 'Escribí tu respuesta acá…',
+    obligatoria: true
+  },
+  {
+    clave: 'problemas',
+    tipo: 'textarea',
+    texto: '¿Qué problemas querés resolver al entrar a Alpha Ecommerce?',
+    placeholder: 'Escribí tu respuesta acá…',
+    obligatoria: true
+  },
+  {
+    clave: 'primer_logro',
+    tipo: 'single',
+    texto: '¿Cuál sería para vos el primer gran logro dentro del programa?',
+    opciones: ['Importar mi primer producto','Generar mi primera venta','Recuperar mi inversión inicial'],
+    obligatoria: true
+  },
+  {
+    clave: 'bonos_top',
+    tipo: 'multi',
+    max: 3,
+    texto: '¿Cuáles de los BONOS de Alpha Ecommerce te parecen más poderosos? (Podés elegir hasta 3)',
+    opciones: [
+      'Llamada 1 a 1 de onboarding con ' + CONFIG.NOMBRE_MENTOR,
+      'Chat 1 a 1 con ' + CONFIG.NOMBRE_MENTOR + ' durante los 3 meses',
+      'Sesiones en vivo semanales (1 a 1 y grupal)',
+      'Sistema Alpha para detectar productos virales antes de que lleguen a Argentina',
+      'Lista de proveedores verificados',
+      'Contactos de Aduana Argentina, forwarder en China y EE.UU. y contadora',
+      'Módulo de web + Mercado Libre + publicidad en automático',
+      'Bonus de educación financiera y mentalidad',
+      'Comunidad de alumnos en WhatsApp'
+    ],
+    obligatoria: true
+  },
+  {
+    clave: 'bono_deseado',
+    tipo: 'textarea',
+    texto: '¿Qué otro bono te hubiese gustado recibir?',
+    placeholder: 'Escribí tu respuesta acá…',
+    obligatoria: true
+  },
+  {
+    clave: 'comentarios',
+    tipo: 'textarea',
+    texto: '¿Algún comentario o sugerencia para nosotros al comenzar?',
+    placeholder: 'Escribí tu respuesta acá…',
+    obligatoria: false
+  }
+];
+
+const LETRAS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const TOTAL = PREGUNTAS.length;
+
+/* =========================================================
+   Estado
+   ========================================================= */
+const respuestas = {};   // clave -> string | array
+let paso = -1;           // -1 bienvenida | 0..TOTAL-1 preguntas | TOTAL final
+let enviando = false;
+let ultimoPayload = null; // guardado para reintentar si el envío falla
+
+const tarjeta = document.getElementById('tarjeta');
+const barra = document.getElementById('barra');
+
+/* =========================================================
+   Utilidades
+   ========================================================= */
+function esc(str){
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function paramUrl(nombre){
+  try{
+    return new URLSearchParams(window.location.search).get(nombre) || '';
+  }catch(e){
+    return '';
+  }
+}
+
+/* ISO 8601 en hora Argentina (UTC-3) */
+function timestampArgentina(){
+  const ahora = new Date();
+  const ar = new Date(ahora.getTime() - 3 * 60 * 60 * 1000);
+  const p = function(n){ return String(n).padStart(2,'0'); };
+  return ar.getUTCFullYear() + '-' + p(ar.getUTCMonth() + 1) + '-' + p(ar.getUTCDate()) +
+         'T' + p(ar.getUTCHours()) + ':' + p(ar.getUTCMinutes()) + ':' + p(ar.getUTCSeconds()) +
+         '-03:00';
+}
+
+function actualizarProgreso(){
+  let pct = 0;
+  if (paso >= 0) pct = Math.min(100, ((paso) / TOTAL) * 100);
+  if (paso >= TOTAL) pct = 100;
+  barra.style.width = pct + '%';
+}
+
+function transicionar(pintar){
+  tarjeta.classList.add('saliendo');
+  window.setTimeout(function(){
+    tarjeta.classList.remove('saliendo');
+    tarjeta.classList.add('entrando');
+    pintar();
+    actualizarProgreso();
+    // fuerza reflow para que la transición de entrada se dispare
+    void tarjeta.offsetWidth;
+    tarjeta.classList.remove('entrando');
+  }, 200);
+}
+
+function mostrarError(msg){
+  const el = document.getElementById('error');
+  if (el) el.textContent = msg;
+}
+
+/* =========================================================
+   Pantallas
+   ========================================================= */
+function pintarBienvenida(){
+  tarjeta.innerHTML =
+    '<h1 class="titulo">Bienvenido a Alpha Ecommerce <span class="naranja">🟠</span></h1>' +
+    '<p class="bajada">Antes de arrancar, contanos un poco de vos. Son 2 minutos y nos ayuda a acompañarte mejor.</p>' +
+    '<div class="pie">' +
+      '<button class="btn btn--grande" id="empezar" type="button">Empezar</button>' +
+      '<span class="tip">o apretá <kbd>Enter</kbd></span>' +
+    '</div>';
+
+  document.getElementById('empezar').addEventListener('click', avanzar);
+}
+
+function pintarFinal(){
+  tarjeta.innerHTML =
+    '<h1 class="titulo">¡Listo! Ya tenemos tu info.</h1>' +
+    '<p class="bajada">Nos vemos en la llamada de onboarding con ' + esc(CONFIG.NOMBRE_MENTOR) + '.</p>';
+}
+
+function pintarPregunta(){
+  const q = PREGUNTAS[paso];
+  const valor = respuestas[q.clave];
+  const esUltima = paso === TOTAL - 1;
+
+  let html =
+    '<span class="badge">Pregunta ' + (paso + 1) + ' de ' + TOTAL + '</span>' +
+    '<h2 class="pregunta">' + esc(q.texto) +
+      (q.obligatoria ? ' <span class="obligatorio">*</span>' : '') +
+    '</h2>';
+
+  if (q.tipo === 'multi'){
+    html += '<p class="ayuda">Podés elegir hasta ' + q.max + '.</p>';
+  } else if (q.tipo === 'textarea'){
+    html += '<p class="ayuda">Enter para continuar · Shift + Enter para un párrafo nuevo.</p>';
+  } else {
+    html += '<p class="ayuda">&nbsp;</p>';
+  }
+
+  if (q.tipo === 'text'){
+    html += '<input class="campo" id="campo" type="text" autocomplete="off" ' +
+            'placeholder="' + esc(q.placeholder || '') + '" value="' + esc(valor || '') + '" />' +
+            '<div style="height:22px"></div>';
+
+  } else if (q.tipo === 'textarea'){
+    html += '<textarea class="campo" id="campo" rows="4" ' +
+            'placeholder="' + esc(q.placeholder || '') + '">' + esc(valor || '') + '</textarea>' +
+            '<div style="height:22px"></div>';
+
+  } else if (q.tipo === 'select'){
+    html += '<select class="campo" id="campo">' +
+            '<option value="">Elegí una opción…</option>';
+    q.opciones.forEach(function(op){
+      const sel = (valor === op) ? ' selected' : '';
+      html += '<option value="' + esc(op) + '"' + sel + '>' + esc(op) + '</option>';
+    });
+    html += '</select><div style="height:22px"></div>';
+
+  } else { // single | multi
+    const seleccion = q.tipo === 'multi' ? (Array.isArray(valor) ? valor : []) : [valor];
+    html += '<div class="opciones" role="group">';
+    q.opciones.forEach(function(op, i){
+      const activa = seleccion.indexOf(op) !== -1;
+      html += '<button type="button" class="opcion' + (activa ? ' sel' : '') + '" ' +
+              'data-op="' + esc(op) + '" aria-pressed="' + (activa ? 'true' : 'false') + '">' +
+                '<span class="letra">' + LETRAS[i] + '</span>' +
+                '<span class="opcion__txt">' + esc(op) + '</span>' +
+              '</button>';
+    });
+    html += '</div>';
+
+    if (q.otro){
+      const visible = seleccion.indexOf(q.otro.activadaPor) !== -1;
+      html += '<div class="otro-wrap" id="otroWrap"' + (visible ? '' : ' hidden') + '>' +
+                '<input class="campo" id="campoOtro" type="text" autocomplete="off" ' +
+                'placeholder="' + esc(q.otro.placeholder) + '" ' +
+                'value="' + esc(respuestas[q.otro.clave] || '') + '" />' +
+              '</div>';
+    }
+  }
+
+  html += '<p class="error" id="error"></p>' +
+          '<div class="pie">' +
+            '<button class="btn" id="aceptar" type="button">' + (esUltima ? 'Enviar' : 'Aceptar') + '</button>' +
+            '<span class="tip">o apretá <kbd>Enter</kbd></span>' +
+          '</div>' +
+          '<button class="volver" id="volver" type="button">↑ Volver</button>';
+
+  tarjeta.innerHTML = html;
+
+  document.getElementById('aceptar').addEventListener('click', avanzar);
+  document.getElementById('volver').addEventListener('click', retroceder);
+
+  const opciones = tarjeta.querySelectorAll('.opcion');
+  for (let i = 0; i < opciones.length; i++){
+    opciones[i].addEventListener('click', function(){
+      alternarOpcion(this.getAttribute('data-op'));
+    });
+  }
+
+  const campo = document.getElementById('campo');
+  if (campo) campo.focus();
+}
+
+/* =========================================================
+   Selección de opciones
+   ========================================================= */
+function alternarOpcion(op){
+  const q = PREGUNTAS[paso];
+  mostrarError('');
+
+  if (q.tipo === 'single'){
+    respuestas[q.clave] = op;
+    if (q.otro && op !== q.otro.activadaPor) respuestas[q.otro.clave] = '';
+    refrescarOpciones();
+    return;
+  }
+
+  if (q.tipo === 'multi'){
+    let sel = Array.isArray(respuestas[q.clave]) ? respuestas[q.clave].slice() : [];
+    const i = sel.indexOf(op);
+    if (i !== -1){
+      sel.splice(i, 1);
+    } else {
+      if (sel.length >= q.max){
+        mostrarError('Máximo ' + q.max + ' opciones');
+        return;
+      }
+      sel.push(op);
+    }
+    respuestas[q.clave] = sel;
+    refrescarOpciones();
+  }
+}
+
+function refrescarOpciones(){
+  const q = PREGUNTAS[paso];
+  const valor = respuestas[q.clave];
+  const seleccion = q.tipo === 'multi' ? (Array.isArray(valor) ? valor : []) : [valor];
+
+  const opciones = tarjeta.querySelectorAll('.opcion');
+  for (let i = 0; i < opciones.length; i++){
+    const activa = seleccion.indexOf(opciones[i].getAttribute('data-op')) !== -1;
+    opciones[i].classList.toggle('sel', activa);
+    opciones[i].setAttribute('aria-pressed', activa ? 'true' : 'false');
+  }
+
+  if (q.otro){
+    const wrap = document.getElementById('otroWrap');
+    if (wrap){
+      const visible = seleccion.indexOf(q.otro.activadaPor) !== -1;
+      wrap.hidden = !visible;
+      if (visible){
+        const campoOtro = document.getElementById('campoOtro');
+        if (campoOtro) campoOtro.focus();
+      }
+    }
+  }
+}
+
+/* =========================================================
+   Guardar y validar
+   ========================================================= */
+function guardarCampoActual(){
+  const q = PREGUNTAS[paso];
+  const campo = document.getElementById('campo');
+  if (campo && (q.tipo === 'text' || q.tipo === 'textarea' || q.tipo === 'select')){
+    respuestas[q.clave] = campo.value.trim();
+  }
+  if (q.otro){
+    const campoOtro = document.getElementById('campoOtro');
+    if (campoOtro) respuestas[q.otro.clave] = campoOtro.value.trim();
+  }
+}
+
+function validarActual(){
+  const q = PREGUNTAS[paso];
+  const valor = respuestas[q.clave];
+
+  if (q.obligatoria){
+    if (q.tipo === 'multi'){
+      if (!Array.isArray(valor) || valor.length === 0){
+        mostrarError('Elegí al menos una opción');
+        return false;
+      }
+    } else if (!valor){
+      mostrarError(q.tipo === 'single' || q.tipo === 'select'
+        ? 'Elegí una opción para continuar'
+        : 'Completá este campo para continuar');
+      return false;
+    }
+  }
+
+  if (q.otro && valor === q.otro.activadaPor && !respuestas[q.otro.clave]){
+    mostrarError('Contanos cuál es tu motivo');
+    return false;
+  }
+
+  mostrarError('');
+  return true;
+}
+
+/* =========================================================
+   Navegación
+   ========================================================= */
+function avanzar(){
+  if (enviando) return;
+
+  if (paso === -1){
+    paso = 0;
+    transicionar(pintarPregunta);
+    return;
+  }
+
+  if (paso >= TOTAL) return;
+
+  guardarCampoActual();
+  if (!validarActual()) return;
+
+  if (paso === TOTAL - 1){
+    enviar();
+    return;
+  }
+
+  paso++;
+  transicionar(pintarPregunta);
+}
+
+function retroceder(){
+  if (enviando) return;
+  if (paso <= 0 || paso >= TOTAL) return;
+  guardarCampoActual();
+  paso--;
+  transicionar(pintarPregunta);
+}
+
+/* =========================================================
+   Envío
+   ========================================================= */
+function armarPayload(){
+  const payload = {
+    timestamp: timestampArgentina()
+  };
+
+  PREGUNTAS.forEach(function(q){
+    const valor = respuestas[q.clave];
+    if (q.tipo === 'multi'){
+      payload[q.clave] = Array.isArray(valor) ? valor.join('; ') : '';
+    } else {
+      payload[q.clave] = valor || '';
+    }
+    if (q.otro) payload[q.otro.clave] = respuestas[q.otro.clave] || '';
+  });
+
+  payload.utm_source = paramUrl('utm_source');
+  payload.utm_campaign = paramUrl('utm_campaign');
+  payload.ref = paramUrl('ref');
+  payload.user_agent = navigator.userAgent;
+
+  return payload;
+}
+
+function enviar(){
+  const payload = armarPayload();
+  ultimoPayload = payload;
+
+  const btn = document.getElementById('aceptar');
+
+  if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL === PLACEHOLDER_URL){
+    console.warn(
+      '[Alpha Encuesta] CONFIG.SCRIPT_URL todavía tiene el placeholder. ' +
+      'No se envió nada al Sheet. Pegá la URL del Web App de Apps Script en CONFIG.SCRIPT_URL.'
+    );
+    console.log('[Alpha Encuesta] Payload que se hubiese enviado:', payload);
+    mostrarError('Modo prueba: falta configurar SCRIPT_URL (mirá la consola).');
+    return;
+  }
+
+  enviando = true;
+  if (btn){
+    btn.disabled = true;
+    btn.textContent = 'Enviando…';
+  }
+  mostrarError('');
+
+  fetch(CONFIG.SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  })
+  .then(function(){
+    // Con mode:'no-cors' la respuesta es opaca: si no lanzó error, asumimos éxito.
+    enviando = false;
+    ultimoPayload = null;
+    paso = TOTAL;
+    transicionar(pintarFinal);
+  })
+  .catch(function(err){
+    console.error('[Alpha Encuesta] Error al enviar:', err);
+    console.log('[Alpha Encuesta] Payload guardado en window.ultimoPayload para reintentar.');
+    enviando = false;
+    if (btn){
+      btn.disabled = false;
+      btn.textContent = 'Enviar';
+    }
+    mostrarError('Hubo un problema, intentá de nuevo');
+  });
+}
+
+/* expone el payload pendiente para reintentar a mano desde la consola */
+Object.defineProperty(window, 'ultimoPayload', {
+  get: function(){ return ultimoPayload; }
+});
+window.reintentarEnvio = function(){
+  if (!ultimoPayload){
+    console.log('[Alpha Encuesta] No hay payload pendiente.');
+    return;
+  }
+  paso = TOTAL - 1;
+  enviar();
+};
+
+/* =========================================================
+   Atajos de teclado
+   ========================================================= */
+document.addEventListener('keydown', function(e){
+  if (enviando) return;
+  if (paso >= TOTAL) return;
+
+  const destino = e.target;
+  const etiqueta = destino && destino.tagName ? destino.tagName.toUpperCase() : '';
+  const escribiendo = etiqueta === 'INPUT' || etiqueta === 'TEXTAREA' || etiqueta === 'SELECT';
+
+  // Enter → avanzar (Shift+Enter en textarea = párrafo nuevo)
+  if (e.key === 'Enter'){
+    if (etiqueta === 'TEXTAREA' && e.shiftKey) return;
+    e.preventDefault();
+    avanzar();
+    return;
+  }
+
+  // Flecha arriba → volver (salvo si estás escribiendo en un textarea)
+  if (e.key === 'ArrowUp'){
+    if (etiqueta === 'TEXTAREA') return;
+    e.preventDefault();
+    retroceder();
+    return;
+  }
+
+  // Letra → seleccionar opción
+  if (escribiendo) return;
+  if (paso < 0 || paso >= TOTAL) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+  const q = PREGUNTAS[paso];
+  if (q.tipo !== 'single' && q.tipo !== 'multi') return;
+  if (e.key.length !== 1) return;
+
+  const i = LETRAS.indexOf(e.key.toUpperCase());
+  if (i >= 0 && i < q.opciones.length){
+    e.preventDefault();
+    alternarOpcion(q.opciones[i]);
+  }
+});
+
+/* =========================================================
+   Arranque
+   ========================================================= */
+pintarBienvenida();
+actualizarProgreso();
+</script>
+</body>
+</html>
