@@ -69,7 +69,9 @@ Falta un solo paso: conectarlo con GitHub para que se publique
 
 1. Abrí el link de arriba → **Site configuration → Build & deploy → Link repository**
    (si te aparece el botón **"Import from Git"**, es el mismo camino).
-2. Elegí **GitHub** → este repositorio → rama `main`.
+2. Elegí **GitHub** → este repositorio → y en "Branch to deploy" elegí la rama
+   donde está esta versión: **`claude/quirky-pasteur-3f4xvh`**
+   (o mergeala a `main` primero y elegí `main`).
 3. Publish directory: `.` — Build command: vacío. **Deploy**.
 4. En un minuto queda online:
    - Landing VSL → `https://alpha-ecommerce-precall.netlify.app/`
