@@ -17,7 +17,7 @@ const PRECALL_CONFIG = {
      Tu planilla de respuestas ya está creada acá:
      https://docs.google.com/spreadsheets/d/1MnHYbyOG8a3RTgQ6gdeZbioyOhmnGwTyD5StQPq9_EI/edit
      --------------------------------------------------------------- */
-  sheetsURL: '',
+  sheetsURL: 'https://script.google.com/macros/s/AKfycbzVum04z2OzhFFyqUL8IJb2fWA4E2vcEZQWrHrCBRj-xT3kd_DLthhEkcMpGMp8Qi-Wvw/exec',
 
   /* ---------------------------------------------------------------
      2) COPIA DE RESPALDO EN NETLIFY (recomendado dejarlo en true)
