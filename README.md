@@ -42,11 +42,11 @@ El link que le pasa el closer al lead es tu dominio + `/precall.html`
 Paso 1 — datos de contacto · Paso 2 — situación actual, intentos previos y
 qué lo frena · Paso 3 — objetivo mensual y qué cambiaría en su vida ·
 Paso 4 — compromiso (1 a 10), inversión y capital disponible ·
-Paso 5 — horario para la llamada, cómo nos conoció y confirmación de asistencia.
+Paso 5 — comentarios libres y confirmación de asistencia.
 
-Para editar, agregar o quitar preguntas: se tocan en `precall.html` y hay que
-agregar el mismo nombre en la lista `COLUMNAS` de
-[`google-sheets/precall-apps-script.gs`](google-sheets/precall-apps-script.gs).
+Para editar, agregar o quitar preguntas se tocan en `precall.html`. El script
+guarda cada respuesta en la columna que coincide con el nombre del campo, así
+que si agregás una pregunta nueva, la columna se crea sola en la planilla.
 
 ## 👀 Verla en tu compu
 

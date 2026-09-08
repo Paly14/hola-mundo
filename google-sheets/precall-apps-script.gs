@@ -11,7 +11,11 @@
 /** Nombre de la pestaña donde se guardan las respuestas. */
 var HOJA = 'Pre-Call';
 
-/** Orden de las columnas (tiene que coincidir con los nombres del formulario). */
+/**
+ * Columnas con las que se crea la planilla la primera vez.
+ * Si la planilla ya existe, mandan SUS encabezados: podés agregar, quitar o
+ * reordenar columnas ahí y el script se acomoda solo.
+ */
 var COLUMNAS = [
   'Fecha',
   'Nombre y apellido',
@@ -33,8 +37,6 @@ var COLUMNAS = [
   'Cuanto invertirias',
   'Capital disponible',
   'Cuando podrias empezar',
-  'Horario preferido',
-  'Como nos conociste',
   'Comentarios',
   'Compromiso de asistencia',
   'Origen'
@@ -46,12 +48,27 @@ function doPost(e) {
   lock.waitLock(30000); // evita que dos envíos simultáneos se pisen
   try {
     var datos = JSON.parse(e.postData.contents);
-    var hoja = obtenerHoja_();
+    datos['Fecha'] = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
 
-    var fila = COLUMNAS.map(function (columna) {
-      if (columna === 'Fecha') {
-        return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
-      }
+    var hoja = obtenerHoja_();
+    var encabezados = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0];
+
+    // Si el formulario manda algo que la planilla todavía no tiene,
+    // se agrega como columna nueva al final.
+    var nuevas = Object.keys(datos).filter(function (clave) {
+      return encabezados.indexOf(clave) === -1;
+    });
+    if (nuevas.length) {
+      hoja.getRange(1, encabezados.length + 1, 1, nuevas.length)
+          .setValues([nuevas])
+          .setFontWeight('bold')
+          .setBackground('#ff9248')
+          .setFontColor('#ffffff');
+      encabezados = encabezados.concat(nuevas);
+    }
+
+    // Cada dato va a la columna que le corresponde por nombre.
+    var fila = encabezados.map(function (columna) {
       return datos[columna] !== undefined ? datos[columna] : '';
     });
 
