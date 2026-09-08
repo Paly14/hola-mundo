@@ -59,16 +59,27 @@ python3 -m http.server 8000
 
 ## 🚀 Publicarla en Netlify
 
-El repo ya trae `netlify.toml` configurado (sitio estático, sin compilar).
+El repo ya trae `netlify.toml` configurado (sitio estático, sin compilar) y el
+sitio **ya está creado** en tu cuenta:
 
-1. Entrá a [app.netlify.com](https://app.netlify.com) → **Add new site → Import an existing project**.
-2. Elegí **GitHub** y seleccioná este repositorio.
-3. Dejá todo como viene (publish directory: `.`) y **Deploy**.
-4. En unos segundos tenés tu link: `https://algo.netlify.app`
-   - Landing VSL → `https://algo.netlify.app/`
-   - Formulario pre-call → `https://algo.netlify.app/precall.html`
+👉 [app.netlify.com/projects/alpha-ecommerce-precall](https://app.netlify.com/projects/alpha-ecommerce-precall)
 
-En **Site configuration → Domain management** podés poner tu dominio propio.
+Falta un solo paso: conectarlo con GitHub para que se publique
+(y para que cada cambio futuro se publique solo).
+
+1. Abrí el link de arriba → **Site configuration → Build & deploy → Link repository**
+   (si te aparece el botón **"Import from Git"**, es el mismo camino).
+2. Elegí **GitHub** → este repositorio → rama `main`.
+3. Publish directory: `.` — Build command: vacío. **Deploy**.
+4. En un minuto queda online:
+   - Landing VSL → `https://alpha-ecommerce-precall.netlify.app/`
+   - Landing pre-call → `https://alpha-ecommerce-precall.netlify.app/precall.html`
+
+> Alternativa sin Git: en la pestaña **Deploys**, arrastrá la carpeta del
+> proyecto al recuadro "Drag and drop your site output folder here".
+
+En **Domain management** podés ponerle tu dominio propio o cambiar el nombre
+`alpha-ecommerce-precall` por el que quieras.
 
 ### 📥 Respaldo de respuestas en Netlify
 
