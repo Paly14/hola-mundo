@@ -27,24 +27,7 @@
   texto('pcTitle', CFG.titulo);
   texto('pcSub', CFG.subtitulo);
   texto('pcThanksSub', CFG.gracias);
-  texto('pcFooterBrand', CFG.marca);
-  var anio = document.getElementById('pcYear');
-  if (anio) anio.textContent = '© ' + new Date().getFullYear();
   if (CFG.marca) document.title = 'Formulario Pre-Call — ' + CFG.marca;
-
-  /* ---------- WhatsApp ---------- */
-  var linksWa = [document.getElementById('pcWa'), document.getElementById('pcWaFloat')];
-  var hayWa = CFG.whatsapp && CFG.whatsapp.numero;
-  linksWa.forEach(function (link) {
-    if (!link) return;
-    if (hayWa) {
-      link.href =
-        'https://wa.me/' + CFG.whatsapp.numero +
-        '?text=' + encodeURIComponent(CFG.whatsapp.mensaje || '');
-    } else {
-      link.hidden = true;
-    }
-  });
 
   /* ---------- Navegación entre pasos ---------- */
   stepTotal.textContent = String(steps.length);
@@ -58,14 +41,7 @@
     btnNext.hidden = i === steps.length - 1;
     btnSend.hidden = i !== steps.length - 1;
     errorBox.hidden = true;
-    if (!primerRender) irAlFormulario();
-  }
-
-  function irAlFormulario() {
-    var seccion = document.getElementById('formulario');
-    if (!seccion) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
-    var y = seccion.getBoundingClientRect().top + window.pageYOffset - 70;
-    window.scrollTo({ top: y, behavior: 'smooth' });
+    if (!primerRender) window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   btnNext.addEventListener('click', function () {
@@ -221,8 +197,7 @@
         document.querySelector('.pc-progress').hidden = true;
         document.querySelector('.pc-progress__label').hidden = true;
         thanks.hidden = false;
-        irAlFormulario();
-        if (CFG.agendaURL) window.open(CFG.agendaURL, '_blank', 'noopener');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
   });
 

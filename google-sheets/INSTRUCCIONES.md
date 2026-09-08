@@ -57,7 +57,7 @@ aparece como una fila nueva en la pestaña "Pre-Call"** de tu planilla.
 
 ## ✅ Cómo probar que funciona
 
-1. Abrí `precall.html` en el navegador, completá el formulario con datos de prueba y enviá.
+1. Abrí el formulario en el navegador, completalo con datos de prueba y enviá.
 2. Mirá la planilla: tiene que aparecer una fila nueva en unos segundos.
 3. Si no aparece, revisá:
    - que la URL termine en `/exec` (no en `/dev`);

@@ -20,9 +20,10 @@ Los links de YouTube funcionan en cualquier formato:
 
 ## 📞 Formulario Pre-Call (respuestas a Google Sheets)
 
-Página aparte: **`precall.html`** — landing completa para agendar la llamada
-(hero, qué te llevás, para quién es, cómo funciona, FAQ) con el formulario de
-5 pasos incluido. Diseño crema, naranja y blanco. Lista para publicar en Netlify.
+Página aparte: **`precall.html`** — **no es una landing de venta**: es la
+herramienta interna que el closer le pasa al lead **antes** de la llamada para
+llegar con información. No tiene CTA, ni FAQ, ni botones de WhatsApp: sólo el
+formulario en 5 pasos, en crema, naranja y blanco.
 
 **Tu planilla de respuestas ya está creada:**
 [Alpha Ecommerce — Pre-Call (respuestas)](https://docs.google.com/spreadsheets/d/1MnHYbyOG8a3RTgQ6gdeZbioyOhmnGwTyD5StQPq9_EI/edit)
@@ -31,11 +32,10 @@ Página aparte: **`precall.html`** — landing completa para agendar la llamada
    [`google-sheets/INSTRUCCIONES.md`](google-sheets/INSTRUCCIONES.md) (5 minutos).
 2. Pegá la URL que te da Google en `sheetsURL`, dentro de
    [`assets/js/precall-config.js`](assets/js/precall-config.js).
-3. Ahí mismo podés cambiar el WhatsApp, los textos y el link para agendar
-   (Calendly) que se abre después de enviar.
+3. Ahí mismo podés cambiar los textos (título, subtítulo y mensaje final).
 
-Para compartirlo, el link es tu dominio + `/precall.html`
-(ej: `https://tusitio.com/precall.html`).
+El link que le pasa el closer al lead es tu dominio + `/precall.html`
+(ej: `https://alpha-ecommerce-precall.netlify.app/precall.html`).
 
 ### Preguntas que incluye
 
@@ -75,7 +75,7 @@ Falta un solo paso: conectarlo con GitHub para que se publique
 3. Publish directory: `.` — Build command: vacío. **Deploy**.
 4. En un minuto queda online:
    - Landing VSL → `https://alpha-ecommerce-precall.netlify.app/`
-   - Landing pre-call → `https://alpha-ecommerce-precall.netlify.app/precall.html`
+   - Formulario pre-call → `https://alpha-ecommerce-precall.netlify.app/precall.html`
 
 > Alternativa sin Git: en la pestaña **Deploys**, arrastrá la carpeta del
 > proyecto al recuadro "Drag and drop your site output folder here".
@@ -100,11 +100,11 @@ Google falla o todavía no configuraste el Apps Script. Se puede apagar poniendo
 
 ```
 index.html                      → landing VSL
-precall.html                    → formulario pre-call
+precall.html                    → formulario pre-call (uso interno del closer)
 assets/css/styles.css           → diseño de la landing
 assets/css/precall.css          → diseño del formulario
 assets/js/config.js             → 👈 EDITÁS ACÁ (textos, WhatsApp, videos)
-assets/js/precall-config.js     → 👈 EDITÁS ACÁ (link de Google Sheets, agenda)
+assets/js/precall-config.js     → 👈 EDITÁS ACÁ (link de Google Sheets y textos)
 assets/js/app.js                → lógica de la landing (no hace falta tocar)
 assets/js/precall.js            → lógica del formulario (no hace falta tocar)
 google-sheets/INSTRUCCIONES.md  → cómo conectar la planilla
