@@ -27,17 +27,24 @@
   texto('pcTitle', CFG.titulo);
   texto('pcSub', CFG.subtitulo);
   texto('pcThanksSub', CFG.gracias);
+  texto('pcFooterBrand', CFG.marca);
+  var anio = document.getElementById('pcYear');
+  if (anio) anio.textContent = '© ' + new Date().getFullYear();
   if (CFG.marca) document.title = 'Formulario Pre-Call — ' + CFG.marca;
 
   /* ---------- WhatsApp ---------- */
-  var wa = document.getElementById('pcWa');
-  if (wa && CFG.whatsapp && CFG.whatsapp.numero) {
-    wa.href =
-      'https://wa.me/' + CFG.whatsapp.numero +
-      '?text=' + encodeURIComponent(CFG.whatsapp.mensaje || '');
-  } else if (wa) {
-    wa.hidden = true;
-  }
+  var linksWa = [document.getElementById('pcWa'), document.getElementById('pcWaFloat')];
+  var hayWa = CFG.whatsapp && CFG.whatsapp.numero;
+  linksWa.forEach(function (link) {
+    if (!link) return;
+    if (hayWa) {
+      link.href =
+        'https://wa.me/' + CFG.whatsapp.numero +
+        '?text=' + encodeURIComponent(CFG.whatsapp.mensaje || '');
+    } else {
+      link.hidden = true;
+    }
+  });
 
   /* ---------- Navegación entre pasos ---------- */
   stepTotal.textContent = String(steps.length);
@@ -51,7 +58,14 @@
     btnNext.hidden = i === steps.length - 1;
     btnSend.hidden = i !== steps.length - 1;
     errorBox.hidden = true;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!primerRender) irAlFormulario();
+  }
+
+  function irAlFormulario() {
+    var seccion = document.getElementById('formulario');
+    if (!seccion) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    var y = seccion.getBoundingClientRect().top + window.pageYOffset - 70;
+    window.scrollTo({ top: y, behavior: 'smooth' });
   }
 
   btnNext.addEventListener('click', function () {
@@ -156,6 +170,18 @@
     return datos;
   }
 
+  /* ---------- Copia de respaldo en Netlify (Formularios) ---------- */
+  function copiaNetlify(datos) {
+    if (CFG.netlifyForms === false) return Promise.resolve();
+    var cuerpo = new URLSearchParams({ 'form-name': 'precall' });
+    Object.keys(datos).forEach(function (clave) { cuerpo.append(clave, datos[clave]); });
+    return fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: cuerpo.toString(),
+    }).catch(function () { /* fuera de Netlify simplemente no aplica */ });
+  }
+
   /* ---------- Envío a Google Sheets ---------- */
   function enviar(datos) {
     if (!CFG.sheetsURL) {
@@ -186,17 +212,21 @@
     btnSend.disabled = true;
     btnSend.textContent = 'Enviando…';
 
-    enviar(respuestas())
+    var datos = respuestas();
+    copiaNetlify(datos);
+    enviar(datos)
       .catch(function (err) { console.error('[pre-call]', err); })
       .then(function () {
         form.hidden = true;
         document.querySelector('.pc-progress').hidden = true;
         document.querySelector('.pc-progress__label').hidden = true;
         thanks.hidden = false;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        irAlFormulario();
         if (CFG.agendaURL) window.open(CFG.agendaURL, '_blank', 'noopener');
       });
   });
 
+  var primerRender = true;
   mostrar(0);
+  primerRender = false;
 })();

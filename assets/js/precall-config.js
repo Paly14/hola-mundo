@@ -15,6 +15,8 @@ const PRECALL_CONFIG = {
      Mientras esté vacío, el formulario funciona pero NO guarda nada.
      --------------------------------------------------------------- */
   sheetsURL: '',
+  // Tu planilla ya está creada acá:
+  // https://docs.google.com/spreadsheets/d/1MnHYbyOG8a3RTgQ6gdeZbioyOhmnGwTyD5StQPq9_EI/edit
 
   /* ---------------------------------------------------------------
      2) WHATSAPP (botón que aparece después de enviar)
@@ -26,7 +28,16 @@ const PRECALL_CONFIG = {
   },
 
   /* ---------------------------------------------------------------
-     3) LINK PARA AGENDAR (Calendly, Google Calendar, etc.)
+     3) COPIA DE RESPALDO EN NETLIFY (recomendado dejarlo en true)
+     Si publicás la web en Netlify, cada respuesta queda TAMBIÉN
+     guardada en Netlify → tu sitio → pestaña "Forms".
+     Es una red de seguridad por si falla Google.
+     Si no usás Netlify, dejalo igual: simplemente no hace nada.
+     --------------------------------------------------------------- */
+  netlifyForms: true,
+
+  /* ---------------------------------------------------------------
+     4) LINK PARA AGENDAR (Calendly, Google Calendar, etc.)
      Si lo cargás, después de enviar el formulario se abre solo
      para que la persona elija día y hora.
      Si lo dejás vacío (''), no se abre nada.
@@ -34,7 +45,7 @@ const PRECALL_CONFIG = {
   agendaURL: '',
 
   /* ---------------------------------------------------------------
-     4) TEXTOS DE LA PÁGINA
+     5) TEXTOS DE LA PÁGINA
      --------------------------------------------------------------- */
   marca: 'Alpha Ecommerce',
   titulo: 'Contanos dónde estás hoy',

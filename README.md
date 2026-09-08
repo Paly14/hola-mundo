@@ -20,10 +20,14 @@ Los links de YouTube funcionan en cualquier formato:
 
 ## 📞 Formulario Pre-Call (respuestas a Google Sheets)
 
-Página aparte: **`precall.html`** — el formulario que completa la persona
-*antes* de la llamada. Diseño crema, naranja y blanco, en 5 pasos.
+Página aparte: **`precall.html`** — landing completa para agendar la llamada
+(hero, qué te llevás, para quién es, cómo funciona, FAQ) con el formulario de
+5 pasos incluido. Diseño crema, naranja y blanco. Lista para publicar en Netlify.
 
-1. Conectalo con tu planilla siguiendo
+**Tu planilla de respuestas ya está creada:**
+[Alpha Ecommerce — Pre-Call (respuestas)](https://docs.google.com/spreadsheets/d/1MnHYbyOG8a3RTgQ6gdeZbioyOhmnGwTyD5StQPq9_EI/edit)
+
+1. Conectá el formulario con esa planilla siguiendo
    [`google-sheets/INSTRUCCIONES.md`](google-sheets/INSTRUCCIONES.md) (5 minutos).
 2. Pegá la URL que te da Google en `sheetsURL`, dentro de
    [`assets/js/precall-config.js`](assets/js/precall-config.js).
@@ -52,6 +56,26 @@ Abrí `index.html` en el navegador (doble clic) o serví la carpeta:
 python3 -m http.server 8000
 # luego abrí http://localhost:8000
 ```
+
+## 🚀 Publicarla en Netlify
+
+El repo ya trae `netlify.toml` configurado (sitio estático, sin compilar).
+
+1. Entrá a [app.netlify.com](https://app.netlify.com) → **Add new site → Import an existing project**.
+2. Elegí **GitHub** y seleccioná este repositorio.
+3. Dejá todo como viene (publish directory: `.`) y **Deploy**.
+4. En unos segundos tenés tu link: `https://algo.netlify.app`
+   - Landing VSL → `https://algo.netlify.app/`
+   - Formulario pre-call → `https://algo.netlify.app/precall.html`
+
+En **Site configuration → Domain management** podés poner tu dominio propio.
+
+### 📥 Respaldo de respuestas en Netlify
+
+Además de Google Sheets, cada respuesta queda guardada en Netlify
+(**tu sitio → pestaña Forms → "precall"**). Es una red de seguridad por si
+Google falla o todavía no configuraste el Apps Script. Se puede apagar poniendo
+`netlifyForms: false` en `assets/js/precall-config.js`.
 
 ## 🌐 Publicarla gratis (GitHub Pages)
 

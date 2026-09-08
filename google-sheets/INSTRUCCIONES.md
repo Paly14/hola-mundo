@@ -4,11 +4,15 @@ Tiempo: ~5 minutos. No hace falta saber programar.
 
 ---
 
-## 1) Crear la planilla
+## 1) Abrir la planilla
 
-1. Entrá a [sheets.new](https://sheets.new) (se crea una planilla vacía).
-2. Ponele un nombre, por ejemplo **Alpha Ecommerce — Pre-Call**.
-   (No hace falta crear columnas: se crean solas la primera vez.)
+Ya está creada en tu Google Drive, con todas las columnas listas:
+
+👉 **[Alpha Ecommerce — Pre-Call (respuestas)](https://docs.google.com/spreadsheets/d/1MnHYbyOG8a3RTgQ6gdeZbioyOhmnGwTyD5StQPq9_EI/edit)**
+
+Abrila con la cuenta de Google que usás para el negocio.
+Si preferís usar otra planilla, creá una nueva en [sheets.new](https://sheets.new)
+y hacé los pasos siguientes ahí: las columnas se crean solas.
 
 ## 2) Pegar el código
 
@@ -45,6 +49,9 @@ sheetsURL: 'https://script.google.com/macros/s/AKfycb...../exec',
 
 Guardá, subí los cambios y listo: **cada persona que complete el formulario
 aparece como una fila nueva en la pestaña "Pre-Call"** de tu planilla.
+
+> La primera vez, el script renombra la pestaña que ya está a **Pre-Call**.
+> No hace falta que toques nada.
 
 ---
 

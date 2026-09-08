@@ -75,7 +75,14 @@ function obtenerHoja_() {
   var hoja = libro.getSheetByName(HOJA);
 
   if (!hoja) {
-    hoja = libro.insertSheet(HOJA);
+    var hojas = libro.getSheets();
+    // Planilla recién creada (una sola pestaña vacía o sólo con encabezados):
+    // la reutilizamos en vez de crear una pestaña nueva.
+    if (hojas.length === 1 && hojas[0].getLastRow() <= 1) {
+      hoja = hojas[0].setName(HOJA);
+    } else {
+      hoja = libro.insertSheet(HOJA);
+    }
   }
   if (hoja.getLastRow() === 0) {
     hoja.appendRow(COLUMNAS);
