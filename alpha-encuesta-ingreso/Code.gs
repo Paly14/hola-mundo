@@ -108,6 +108,8 @@ function doPost(e) {
  */
 function setup() {
   const hoja = obtenerHojaRespuestas_();
+  // Reaplica encabezados y formato aunque la hoja ya tuviera datos.
+  escribirEncabezados_(hoja);
   SpreadsheetApp.getActiveSpreadsheet().toast('Hoja "' + HOJA_RESPUESTAS + '" lista.', 'Alpha Ecommerce', 5);
   return hoja.getName();
 }
@@ -160,19 +162,32 @@ function obtenerHojaRespuestas_() {
   let hoja = ss.getSheetByName(HOJA_RESPUESTAS);
 
   if (!hoja) {
-    hoja = ss.insertSheet(HOJA_RESPUESTAS);
+    const hojas = ss.getSheets();
+    // Sheet recién creado: si hay una sola pestaña y está vacía (o solo tiene
+    // los encabezados), la reutilizamos en vez de dejar una pestaña huérfana.
+    if (hojas.length === 1 && hojas[0].getLastRow() <= 1) {
+      hoja = hojas[0].setName(HOJA_RESPUESTAS);
+    } else {
+      hoja = ss.insertSheet(HOJA_RESPUESTAS);
+    }
   }
 
   // Si está vacía (o le falta el encabezado), lo escribimos.
   if (hoja.getLastRow() === 0) {
-    hoja.getRange(1, 1, 1, COLUMNAS.length)
-        .setValues([COLUMNAS])
-        .setFontWeight('bold');
-    hoja.setFrozenRows(1);
-    hoja.getRange(1, 1, 1, COLUMNAS.length).setBackground('#0A0A0A').setFontColor('#F26B22');
+    escribirEncabezados_(hoja);
   }
 
   return hoja;
+}
+
+/** Escribe la fila de encabezados con formato (negrita + fila congelada). */
+function escribirEncabezados_(hoja) {
+  hoja.getRange(1, 1, 1, COLUMNAS.length)
+      .setValues([COLUMNAS])
+      .setFontWeight('bold')
+      .setBackground('#0A0A0A')
+      .setFontColor('#F26B22');
+  hoja.setFrozenRows(1);
 }
 
 /** Guarda cualquier error en la hoja "Errores" junto al body crudo. */

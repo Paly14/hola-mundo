@@ -17,10 +17,16 @@ a una URL de Google Apps Script, y ese script agrega una fila en la hoja
 
 ---
 
-## 1. Crear el Google Sheet
+## 1. El Google Sheet ✅ (ya está creado)
 
-1. Andá a [sheets.new](https://sheets.new).
-2. Ponele de nombre **`ALPHA_ENCUESTA_INGRESO`**.
+Ya existe en tu Drive, con las 23 columnas cargadas:
+
+**[ALPHA_ENCUESTA_INGRESO](https://docs.google.com/spreadsheets/d/1EENJvh8VLAPODqzFTfOUhBvJr7vCjlaUUsUPfOIg_I8/edit)**
+
+`ID: 1EENJvh8VLAPODqzFTfOUhBvJr7vCjlaUUsUPfOIg_I8`
+
+Si alguna vez necesitás rehacerlo desde cero: creá un Sheet nuevo con ese
+nombre y seguí igual desde el paso 2 — `setup()` arma la hoja solo.
 
 ## 2. Pegar el script
 
@@ -39,6 +45,9 @@ a una URL de Google Apps Script, y ese script agrega una fila en la hoja
    > Ese cartel de "Google no verificó esta aplicación" es normal: la app sos vos.
 4. Volvé al Sheet: ya tenés la hoja **`Respuestas`** con los encabezados en
    negrita y la primera fila congelada.
+
+> `setup()` se puede correr las veces que quieras: no borra respuestas, solo
+> deja la hoja `Respuestas` con el nombre, los encabezados y el formato bien.
 
 ## 4. Implementar como aplicación web
 
