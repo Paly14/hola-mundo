@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Formulario Pre-Call — Alpha Ecommerce</title>
+  <meta name="description" content="Completá este formulario antes de tu llamada con el equipo de Alpha Ecommerce." />
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/precall.css" />
+</head>
+<body class="pc-body">
+
+  <header class="pc-nav">
+    <div class="pc-container pc-nav__inner">
+      <a href="index.html" class="pc-brand" id="pcBrand">Alpha Ecommerce</a>
+      <span class="pc-nav__tag">Formulario pre-call</span>
+    </div>
+  </header>
+
+  <main class="pc-container pc-main">
+
+    <!-- ====== INTRO ====== -->
+    <div class="pc-head">
+      <span class="pc-pill">Paso previo a tu llamada</span>
+      <h1 class="pc-title" id="pcTitle">Contanos dónde estás hoy</h1>
+      <p class="pc-sub" id="pcSub">
+        Son 2 minutos. Con esta info preparamos tu llamada y te damos un plan concreto
+        para arrancar tu negocio de importaciones. Cuanto más honesto seas, mejor te podemos ayudar.
+      </p>
+    </div>
+
+    <!-- ====== PROGRESO ====== -->
+    <div class="pc-progress" aria-hidden="true">
+      <div class="pc-progress__bar" id="pcBar"></div>
+    </div>
+    <p class="pc-progress__label">Paso <span id="pcStepNow">1</span> de <span id="pcStepTotal">5</span></p>
+
+    <!-- ====== FORM ====== -->
+    <form id="pcForm" class="pc-card" novalidate>
+
+      <!-- ---------- PASO 1 ---------- -->
+      <section class="pc-step is-active" data-step="1">
+        <h2 class="pc-step__title">1. Tus datos</h2>
+        <p class="pc-step__hint">Para poder contactarte y confirmar el horario.</p>
+
+        <label class="pc-field">
+          <span class="pc-label">Nombre y apellido <b>*</b></span>
+          <input class="pc-input" type="text" name="Nombre y apellido" required autocomplete="name" placeholder="Ej: Juan Pérez" />
+        </label>
+
+        <label class="pc-field">
+          <span class="pc-label">Correo electrónico <b>*</b></span>
+          <input class="pc-input" type="email" name="Correo" required autocomplete="email" placeholder="tucorreo@gmail.com" />
+        </label>
+
+        <label class="pc-field">
+          <span class="pc-label">WhatsApp (con código de país) <b>*</b></span>
+          <input class="pc-input" type="tel" name="WhatsApp" required autocomplete="tel" placeholder="Ej: +54 9 11 2233 4455" />
+        </label>
+
+        <div class="pc-row">
+          <label class="pc-field">
+            <span class="pc-label">País y ciudad <b>*</b></span>
+            <input class="pc-input" type="text" name="Pais y ciudad" required placeholder="Ej: Argentina, Córdoba" />
+          </label>
+          <label class="pc-field">
+            <span class="pc-label">Edad <b>*</b></span>
+            <input class="pc-input" type="number" name="Edad" required min="16" max="99" placeholder="Ej: 32" />
+          </label>
+        </div>
+      </section>
+
+      <!-- ---------- PASO 2 ---------- -->
+      <section class="pc-step" data-step="2">
+        <h2 class="pc-step__title">2. Tu situación hoy</h2>
+        <p class="pc-step__hint">Sin filtros: esto es lo que nos permite ayudarte de verdad.</p>
+
+        <fieldset class="pc-field">
+          <legend class="pc-label">¿A qué te dedicás actualmente? <b>*</b></legend>
+          <div class="pc-options">
+            <label class="pc-opt"><input type="radio" name="Ocupacion actual" value="Empleado en relación de dependencia" required /><span>Empleado en relación de dependencia</span></label>
+            <label class="pc-opt"><input type="radio" name="Ocupacion actual" value="Independiente / profesional" /><span>Independiente / profesional</span></label>
+            <label class="pc-opt"><input type="radio" name="Ocupacion actual" value="Ya tengo un negocio" /><span>Ya tengo un negocio</span></label>
+            <label class="pc-opt"><input type="radio" name="Ocupacion actual" value="Estudiante" /><span>Estudiante</span></label>
+            <label class="pc-opt"><input type="radio" name="Ocupacion actual" value="Sin trabajo en este momento" /><span>Sin trabajo en este momento</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="pc-field">
+          <legend class="pc-label">¿Cuánto generás por mes hoy (aprox.)? <b>*</b></legend>
+          <div class="pc-options">
+            <label class="pc-opt"><input type="radio" name="Ingresos actuales" value="Menos de 500 USD" required /><span>Menos de 500 USD</span></label>
+            <label class="pc-opt"><input type="radio" name="Ingresos actuales" value="De 500 a 1000 USD" /><span>De 500 a 1000 USD</span></label>
+            <label class="pc-opt"><input type="radio" name="Ingresos actuales" value="De 1000 a 2500 USD" /><span>De 1000 a 2500 USD</span></label>
+            <label class="pc-opt"><input type="radio" name="Ingresos actuales" value="Más de 2500 USD" /><span>Más de 2500 USD</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="pc-field">
+          <legend class="pc-label">¿Intentaste emprender antes? <b>*</b></legend>
+          <div class="pc-options pc-options--inline">
+            <label class="pc-opt"><input type="radio" name="Intentaste emprender antes" value="Sí" required data-toggle="quePaso" /><span>Sí</span></label>
+            <label class="pc-opt"><input type="radio" name="Intentaste emprender antes" value="No" data-toggle="quePaso" /><span>No</span></label>
+          </div>
+        </fieldset>
+
+        <label class="pc-field" id="quePaso" hidden>
+          <span class="pc-label">¿Qué pasó? <b>*</b></span>
+          <textarea class="pc-input pc-textarea" name="Que paso" rows="3" placeholder="Contanos brevemente qué intentaste y por qué no funcionó."></textarea>
+        </label>
+
+        <fieldset class="pc-field">
+          <legend class="pc-label">¿Qué es lo que más te frena hoy para empezar? <b>*</b> <em class="pc-note">(podés elegir varias)</em></legend>
+          <div class="pc-options">
+            <label class="pc-opt"><input type="checkbox" name="Que te frena" value="Miedo a perder plata" /><span>Miedo a perder plata</span></label>
+            <label class="pc-opt"><input type="checkbox" name="Que te frena" value="No entender aduana / logística" /><span>No entender aduana / logística</span></label>
+            <label class="pc-opt"><input type="checkbox" name="Que te frena" value="No saber elegir productos" /><span>No saber elegir productos</span></label>
+            <label class="pc-opt"><input type="checkbox" name="Que te frena" value="No saber vender" /><span>No saber vender</span></label>
+            <label class="pc-opt"><input type="checkbox" name="Que te frena" value="Falta de tiempo" /><span>Falta de tiempo</span></label>
+            <label class="pc-opt"><input type="checkbox" name="Que te frena" value="Falta de claridad" /><span>Falta de claridad</span></label>
+            <label class="pc-opt"><input type="checkbox" name="Que te frena" value="Otro" data-toggle="frenaOtro" /><span>Otro</span></label>
+          </div>
+        </fieldset>
+
+        <label class="pc-field" id="frenaOtro" hidden>
+          <span class="pc-label">Contanos cuál es ese "otro" freno</span>
+          <input class="pc-input" type="text" name="Otro freno" placeholder="Escribilo acá" />
+        </label>
+      </section>
+
+      <!-- ---------- PASO 3 ---------- -->
+      <section class="pc-step" data-step="3">
+        <h2 class="pc-step__title">3. Tu objetivo</h2>
+        <p class="pc-step__hint">Adónde querés llegar con un negocio de importaciones.</p>
+
+        <fieldset class="pc-field">
+          <legend class="pc-label">¿Cuánto te gustaría generar por mes? <b>*</b></legend>
+          <div class="pc-options">
+            <label class="pc-opt"><input type="radio" name="Objetivo mensual" value="De 1000 a 3000 USD por mes" required /><span>De 1000 a 3000 USD por mes</span></label>
+            <label class="pc-opt"><input type="radio" name="Objetivo mensual" value="De 3000 a 6000 USD por mes" /><span>De 3000 a 6000 USD por mes</span></label>
+            <label class="pc-opt"><input type="radio" name="Objetivo mensual" value="De 7000 a 10.000 USD por mes" /><span>De 7000 a 10.000 USD por mes</span></label>
+            <label class="pc-opt"><input type="radio" name="Objetivo mensual" value="De 10.000 a 20.000 USD por mes" /><span>De 10.000 a 20.000 USD por mes</span></label>
+            <label class="pc-opt"><input type="radio" name="Objetivo mensual" value="Más de 20.000 USD por mes" /><span>Más de 20.000 USD por mes</span></label>
+          </div>
+        </fieldset>
+
+        <label class="pc-field">
+          <span class="pc-label">¿Qué cambiaría en tu vida si lo lograras? <b>*</b></span>
+          <textarea class="pc-input pc-textarea" name="Que cambiaria en tu vida" rows="4" required placeholder="Ej: dejar mi trabajo, más tiempo con mi familia, comprar mi casa…"></textarea>
+        </label>
+
+        <fieldset class="pc-field">
+          <legend class="pc-label">¿Qué tan lejos sentís que estás de ese objetivo? <b>*</b></legend>
+          <div class="pc-options">
+            <label class="pc-opt"><input type="radio" name="Que tan lejos estas" value="Muy lejos" required /><span>Muy lejos</span></label>
+            <label class="pc-opt"><input type="radio" name="Que tan lejos estas" value="Lejos" /><span>Lejos</span></label>
+            <label class="pc-opt"><input type="radio" name="Que tan lejos estas" value="Cerca pero sin saber por dónde empezar" /><span>Cerca pero sin saber por dónde empezar</span></label>
+            <label class="pc-opt"><input type="radio" name="Que tan lejos estas" value="Cerca, sólo me falta un método" /><span>Cerca, sólo me falta un método</span></label>
+          </div>
+        </fieldset>
+      </section>
+
+      <!-- ---------- PASO 4 ---------- -->
+      <section class="pc-step" data-step="4">
+        <h2 class="pc-step__title">4. Compromiso e inversión</h2>
+        <p class="pc-step__hint">Trabajamos con personas decididas a arrancar. Sé honesto con esto.</p>
+
+        <div class="pc-field">
+          <span class="pc-label">¿Cuán comprometido estás en crear tu negocio este año? <b>*</b></span>
+          <div class="pc-range">
+            <input type="range" name="Compromiso" id="pcRange" min="1" max="10" step="1" value="8" />
+            <output class="pc-range__out" id="pcRangeOut">8</output>
+          </div>
+          <div class="pc-range__scale"><span>1 · Sólo curiosidad</span><span>10 · Empiezo ya</span></div>
+        </div>
+
+        <fieldset class="pc-field">
+          <legend class="pc-label">¿Creés que necesitás ayuda para aprender a importar y crear tu negocio? <b>*</b></legend>
+          <div class="pc-options">
+            <label class="pc-opt"><input type="radio" name="Necesitas ayuda" value="Sí, es lo que necesito" required /><span>Sí, es lo que necesito</span></label>
+            <label class="pc-opt"><input type="radio" name="Necesitas ayuda" value="Tal vez, quiero ver de qué se trata" /><span>Tal vez, quiero ver de qué se trata</span></label>
+            <label class="pc-opt"><input type="radio" name="Necesitas ayuda" value="No, prefiero hacerlo solo" /><span>No, prefiero hacerlo solo</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="pc-field">
+          <legend class="pc-label">¿Cuánto invertirías para aprender a importar y crear tu negocio? <b>*</b></legend>
+          <div class="pc-options">
+            <label class="pc-opt"><input type="radio" name="Cuanto invertirias" value="Menos de 500 USD" required /><span>Menos de 500 USD</span></label>
+            <label class="pc-opt"><input type="radio" name="Cuanto invertirias" value="De 600 a 1200 USD" /><span>De 600 a 1200 USD</span></label>
+            <label class="pc-opt"><input type="radio" name="Cuanto invertirias" value="De 1200 a 2500 USD" /><span>De 1200 a 2500 USD</span></label>
+            <label class="pc-opt"><input type="radio" name="Cuanto invertirias" value="+ de 2500 USD" /><span>+ de 2500 USD</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="pc-field">
+          <legend class="pc-label">¿De cuánto capital disponés hoy para arrancar (mercadería incluida)? <b>*</b></legend>
+          <div class="pc-options">
+            <label class="pc-opt"><input type="radio" name="Capital disponible" value="No tengo capital hoy" required /><span>No tengo capital hoy</span></label>
+            <label class="pc-opt"><input type="radio" name="Capital disponible" value="Menos de 1000 USD" /><span>Menos de 1000 USD</span></label>
+            <label class="pc-opt"><input type="radio" name="Capital disponible" value="De 1000 a 3000 USD" /><span>De 1000 a 3000 USD</span></label>
+            <label class="pc-opt"><input type="radio" name="Capital disponible" value="De 3000 a 5000 USD" /><span>De 3000 a 5000 USD</span></label>
+            <label class="pc-opt"><input type="radio" name="Capital disponible" value="Más de 5000 USD" /><span>Más de 5000 USD</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="pc-field">
+          <legend class="pc-label">Si en la llamada vemos que es para vos, ¿cuándo podrías empezar? <b>*</b></legend>
+          <div class="pc-options">
+            <label class="pc-opt"><input type="radio" name="Cuando podrias empezar" value="Ya mismo" required /><span>Ya mismo</span></label>
+            <label class="pc-opt"><input type="radio" name="Cuando podrias empezar" value="En 15 / 30 días" /><span>En 15 / 30 días</span></label>
+            <label class="pc-opt"><input type="radio" name="Cuando podrias empezar" value="En más de 2 meses" /><span>En más de 2 meses</span></label>
+            <label class="pc-opt"><input type="radio" name="Cuando podrias empezar" value="Todavía no lo sé" /><span>Todavía no lo sé</span></label>
+          </div>
+        </fieldset>
+      </section>
+
+      <!-- ---------- PASO 5 ---------- -->
+      <section class="pc-step" data-step="5">
+        <h2 class="pc-step__title">5. Tu llamada</h2>
+        <p class="pc-step__hint">Último paso y listo.</p>
+
+        <fieldset class="pc-field">
+          <legend class="pc-label">¿En qué horario te queda mejor? <b>*</b></legend>
+          <div class="pc-options">
+            <label class="pc-opt"><input type="radio" name="Horario preferido" value="Mañana (9 a 12 h)" required /><span>Mañana (9 a 12 h)</span></label>
+            <label class="pc-opt"><input type="radio" name="Horario preferido" value="Mediodía (12 a 15 h)" /><span>Mediodía (12 a 15 h)</span></label>
+            <label class="pc-opt"><input type="radio" name="Horario preferido" value="Tarde (15 a 19 h)" /><span>Tarde (15 a 19 h)</span></label>
+            <label class="pc-opt"><input type="radio" name="Horario preferido" value="Noche (19 a 22 h)" /><span>Noche (19 a 22 h)</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="pc-field">
+          <legend class="pc-label">¿Cómo nos conociste? <b>*</b></legend>
+          <div class="pc-options">
+            <label class="pc-opt"><input type="radio" name="Como nos conociste" value="Instagram" required /><span>Instagram</span></label>
+            <label class="pc-opt"><input type="radio" name="Como nos conociste" value="TikTok" /><span>TikTok</span></label>
+            <label class="pc-opt"><input type="radio" name="Como nos conociste" value="YouTube" /><span>YouTube</span></label>
+            <label class="pc-opt"><input type="radio" name="Como nos conociste" value="Facebook" /><span>Facebook</span></label>
+            <label class="pc-opt"><input type="radio" name="Como nos conociste" value="Un conocido me recomendó" /><span>Un conocido me recomendó</span></label>
+            <label class="pc-opt"><input type="radio" name="Como nos conociste" value="Otro" /><span>Otro</span></label>
+          </div>
+        </fieldset>
+
+        <label class="pc-field">
+          <span class="pc-label">¿Hay algo más que quieras que sepamos antes de la llamada?</span>
+          <textarea class="pc-input pc-textarea" name="Comentarios" rows="3" placeholder="Opcional"></textarea>
+        </label>
+
+        <label class="pc-check">
+          <input type="checkbox" name="Compromiso de asistencia" value="Sí, me comprometo a estar" required />
+          <span>Me comprometo a conectarme a la llamada en el horario acordado, con tiempo y en un lugar tranquilo. <b>*</b></span>
+        </label>
+      </section>
+
+      <!-- ---------- ERROR ---------- -->
+      <p class="pc-error" id="pcError" role="alert" hidden></p>
+
+      <!-- ---------- NAV ---------- -->
+      <div class="pc-actions">
+        <button type="button" class="pc-btn pc-btn--ghost" id="pcPrev" hidden>← Volver</button>
+        <button type="button" class="pc-btn pc-btn--main" id="pcNext">Siguiente →</button>
+        <button type="submit" class="pc-btn pc-btn--main" id="pcSend" hidden>Enviar formulario</button>
+      </div>
+    </form>
+
+    <!-- ====== GRACIAS ====== -->
+    <div class="pc-card pc-thanks" id="pcThanks" hidden>
+      <div class="pc-thanks__ico">✓</div>
+      <h2 class="pc-thanks__title">¡Listo! Recibimos tus respuestas</h2>
+      <p class="pc-thanks__sub" id="pcThanksSub">
+        Ya tenemos todo para preparar tu llamada. Si querés, escribinos por WhatsApp
+        para confirmar el horario.
+      </p>
+      <div class="pc-thanks__actions">
+        <a class="pc-btn pc-btn--wa" id="pcWa" href="#" target="_blank" rel="noopener">Confirmar por WhatsApp</a>
+        <a class="pc-btn pc-btn--ghost" href="index.html">Volver al inicio</a>
+      </div>
+    </div>
+
+    <p class="pc-foot">Tus datos son privados y sólo los usamos para preparar tu llamada.</p>
+  </main>
+
+  <script src="assets/js/precall-config.js"></script>
+  <script src="assets/js/precall.js"></script>
+</body>
+</html>
