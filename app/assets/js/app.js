@@ -22,6 +22,7 @@
       var id = h.slice(5);
       if (S.view(id)) return { tipo: 'view', viewId: id };
     }
+    if (h.indexOf('espacio') === 0) return { tipo: 'espacio', viewId: null };
     return { tipo: 'dashboard', viewId: null };
   }
 
@@ -68,6 +69,17 @@
       el('span', { class: 'side__ico', text: AE.perms.esAdmin() ? '📊' : '🏠' }),
       el('span', { text: AE.perms.esAdmin() ? 'Panel y proyecciones' : 'Mi espacio' })
     ]));
+
+    /* El admin además tiene su propio espacio, y desde ahí mira el de cada uno */
+    if (AE.perms.esAdmin()) {
+      host.appendChild(el('button', {
+        class: 'side__item side__item--dash' + (route.tipo === 'espacio' ? ' is-on' : ''),
+        onclick: function () { ir('#/espacio'); }
+      }, [
+        el('span', { class: 'side__ico', text: '🏠' }),
+        el('span', { text: 'Mi espacio y el del equipo' })
+      ]));
+    }
 
     if (AE.perms.puedeCargarIngreso()) {
       host.appendChild(el('button', {
@@ -320,16 +332,17 @@
     var body = document.getElementById('viewBody');
     head.innerHTML = ''; toolbar.innerHTML = ''; body.innerHTML = '';
 
-    if (route.tipo === 'dashboard') {
+    if (route.tipo === 'dashboard' || route.tipo === 'espacio') {
       document.body.classList.add('is-dash');
+      /* El panel completo es sólo para dueño y admin; el resto entra a su espacio */
+      var comoPanel = route.tipo === 'dashboard' && AE.perms.esAdmin();
       // Sólo se ve en pantallas chicas: da acceso al menú lateral
-      var esAdmin = AE.perms.esAdmin();
       head.appendChild(el('div', { class: 'view-head view-head--dash' }, [
         el('button', { class: 'burger', html: '☰', onclick: function () { document.body.classList.toggle('is-side-open'); } }),
-        el('span', { class: 'view-head__ico', text: esAdmin ? '📊' : '🏠' }),
-        el('strong', { text: esAdmin ? 'Panel y proyecciones' : 'Mi espacio' })
+        el('span', { class: 'view-head__ico', text: comoPanel ? '📊' : '🏠' }),
+        el('strong', { text: comoPanel ? 'Panel y proyecciones' : 'Mi espacio' })
       ]));
-      if (esAdmin) AE.dashboard.render(body, ctx);
+      if (comoPanel) AE.dashboard.render(body, ctx);
       else AE.espacio.render(body, ctx);
       return;
     }

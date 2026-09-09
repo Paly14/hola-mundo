@@ -344,6 +344,7 @@ body.is-dash .view-body { padding: 20px 22px 40px; }
 .dash-head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
 .dash-title { font-size: 21px; }
 .seg { display: flex; background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-left: auto; }
+.dash-head .ver-como + .seg { margin-left: 0; }
 .seg__btn { background: none; border: none; padding: 7px 12px; cursor: pointer; font: inherit; font-size: 12px; color: var(--muted); }
 .seg__btn.is-on { background: var(--brand); color: #fff; font-weight: 600; }
 
@@ -657,6 +658,17 @@ body.is-auth .main { display: none; }
 .cloud-link__row { display: flex; gap: 6px; }
 .cloud-link__row .inp { font-size: 12px; }
 
+.ver-como { display: grid; gap: 2px; margin-left: auto; }
+.ver-como .inp { min-width: 220px; }
+
+.preview-bar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: #241c14; color: #fff; border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 14px; font-size: 13px;
+}
+.preview-bar .btn2 { margin-left: auto; background: rgba(255,255,255,0.14); border-color: transparent; color: #fff; }
+.preview-bar .btn2:hover { background: rgba(255,255,255,0.24); }
+
 /* ================= responsive ================= */
 
 @media (max-width: 860px) {
@@ -670,6 +682,8 @@ body.is-auth .main { display: none; }
   .view-head--dash { display: flex; }
   .card-form { grid-template-columns: 1fr; }
   .form-sec__grid { grid-template-columns: 1fr; }
+  .ver-como { margin-left: 0; }
+  .ver-como .inp { min-width: 0; width: 100%; }
   .leadrow { grid-template-columns: 1fr auto; }
   .leadrow__note { grid-column: 1 / -1; white-space: normal; }
   .leadrow__meta { text-align: left; }

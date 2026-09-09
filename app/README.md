@@ -24,6 +24,14 @@ pide cambiarla. Se cambian también desde *Equipo → abrir la ficha → Cambiar
 
 Quién ve qué se ajusta desde *⚙︎ Datos y ajustes → Quién ve qué (permisos)*.
 
+**Dueño y Admin tienen dos pantallas**: *Panel y proyecciones* (los números de todo
+el equipo) y *Mi espacio y el del equipo* (el suyo propio, con un selector
+**"Ver como"** para mirar el espacio de cualquiera tal cual lo ve esa persona, sin
+cerrar sesión).
+
+Al pie de la barra lateral aparece la **versión publicada**: sirve para saber si el
+navegador está viendo lo último o una copia vieja en caché.
+
 **Comisiones**: el closer se lleva el 10% y el setter el 5% del cash efectivamente
 cobrado. El porcentaje se cambia por persona en la tabla *Equipo* (campo Comisión);
 si está vacío se usa el 10% / 5% por defecto. Cada uno ve sólo las suyas, al pie de

@@ -19,14 +19,14 @@
       "claveInicial": true
     },
     {
-      "id": "rec_eq_admin",
-      "nombre": "Admin",
+      "id": "rec_eq_hernan",
+      "nombre": "Hernán",
       "rol": "Admin",
       "email": "",
       "meta_cash": 0,
       "comision": 0,
       "activo": true,
-      "clave": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+      "clave": "7ef2e89ea5519994c05edf1b28c38f84b2ea8cba278445349323a839f9d16d45",
       "claveInicial": true
     },
     {
@@ -562,7 +562,7 @@
       "id": "rec_tar_01",
       "titulo": "Cobrar saldo de Leon (350 USD)",
       "asignados": [
-        "Admin"
+        "Hernán"
       ],
       "estado": "Pendiente",
       "hecha": false,
@@ -571,13 +571,13 @@
       "vence": "",
       "lead": "",
       "detalle": "Programa Programa Completo. Próxima cuota: sin definir",
-      "creada_por": "Admin"
+      "creada_por": "Hernán"
     },
     {
       "id": "rec_tar_02",
       "titulo": "Cobrar saldo de Matias (250 USD)",
       "asignados": [
-        "Admin"
+        "Hernán"
       ],
       "estado": "Pendiente",
       "hecha": false,
@@ -586,7 +586,7 @@
       "vence": "",
       "lead": "",
       "detalle": "Programa Downsell. Próxima cuota: 2026-09-26",
-      "creada_por": "Admin"
+      "creada_por": "Hernán"
     },
     {
       "id": "rec_tar_03",
@@ -602,7 +602,7 @@
       "vence": "",
       "lead": "",
       "detalle": "Campo \"Qué se le entregó del downsell\" en la ficha del alumno.",
-      "creada_por": "Admin"
+      "creada_por": "Hernán"
     },
     {
       "id": "rec_tar_04",
@@ -618,13 +618,13 @@
       "vence": "",
       "lead": "",
       "detalle": "Campo \"Qué se le entregó del downsell\" en la ficha del alumno.",
-      "creada_por": "Admin"
+      "creada_por": "Hernán"
     },
     {
       "id": "rec_tar_05",
       "titulo": "Cargar el plan de cuotas de Leon",
       "asignados": [
-        "Admin"
+        "Hernán"
       ],
       "estado": "Pendiente",
       "hecha": false,
@@ -633,13 +633,13 @@
       "vence": "",
       "lead": "",
       "detalle": "Falta cantidad de cuotas, monto por cuota y fecha de la próxima.",
-      "creada_por": "Admin"
+      "creada_por": "Hernán"
     },
     {
       "id": "rec_tar_06",
       "titulo": "Completar email y teléfono de los alumnos",
       "asignados": [
-        "Admin"
+        "Hernán"
       ],
       "estado": "Pendiente",
       "hecha": false,
@@ -648,7 +648,7 @@
       "vence": "",
       "lead": "",
       "detalle": "Faltan datos de: Leon, Matias, Facundo Miño",
-      "creada_por": "Admin"
+      "creada_por": "Hernán"
     },
     {
       "id": "rec_tar_07",
@@ -663,7 +663,7 @@
       "vence": "",
       "lead": "",
       "detalle": "Están creados en la tabla Recursos, sólo falta pegar cada link.",
-      "creada_por": "Admin"
+      "creada_por": "Hernán"
     }
   ],
   "recursos": [

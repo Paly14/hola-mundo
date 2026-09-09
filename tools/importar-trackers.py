@@ -336,7 +336,7 @@ def main():
 
     equipo = [
         ('Mariano', 'Dueño', 'mariano@alphaecommerce.com', 0, 0),
-        ('Admin', 'Admin', '', 0, 0),
+        ('Hernán', 'Admin', '', 0, 0),
         (config['setter'], 'Setter', '', 0, 5),
         ('Gabo', 'Closer', '', 60000, 10),
     ]
@@ -424,13 +424,13 @@ def main():
             'id': 'rec_tar_%02d' % (len(tareas) + 1), 'titulo': titulo,
             'asignados': asignados, 'estado': 'Pendiente', 'hecha': False,
             'prioridad': prioridad, 'area': area, 'vence': '', 'lead': '',
-            'detalle': detalle, 'creada_por': 'Admin'
+            'detalle': detalle, 'creada_por': 'Hernán'
         })
 
     for a in sorted(alumnos, key=lambda x: -x['saldo']):
         if a['saldo'] > 0:
             tarea('Cobrar saldo de %s (%s USD)' % (a['nombre'], a['saldo']),
-                  ['Admin'], 'Alta', 'Administración',
+                  ['Hernán'], 'Alta', 'Administración',
                   'Programa %s. Próxima cuota: %s' % (a['programa'], a['proxima_cuota'] or 'sin definir'))
 
     # Plata que figura cobrada en el CRM del closer pero no en Gestión de Alumnos
@@ -442,7 +442,7 @@ def main():
         cobrado_crm = l.get('cash_collected') or 0
         if cobrado_crm and cobrado_crm > pagado_por_lead.get(l['id'], 0) + 0.5:
             tarea('Conciliar el pago de %s (%s USD)' % (l['nombre'], cobrado_crm),
-                  ['Admin', 'Gabo'], 'Alta', 'Administración',
+                  ['Hernán', 'Gabo'], 'Alta', 'Administración',
                   'Figura cobrado en el CRM del closer pero no aparece en Gestión de Alumnos.')
 
     # Downsells sin detalle de qué se entregó
@@ -460,19 +460,19 @@ def main():
         if lista and a['precio_total'] and abs(a['precio_total'] - lista) > 0.5:
             tarea('Revisar el precio de %s: %s USD contra %s de lista' %
                   (a['nombre'], a['precio_total'], lista),
-                  ['Admin'], 'Media', 'Administración',
+                  ['Hernán'], 'Media', 'Administración',
                   'Puede ser un plan de cuotas con recargo o un precio acordado distinto.')
 
     # Planes de cuota sin detalle
     for a in alumnos:
         if sinacentos(a.get('modalidad') or '').startswith('plan') and not a.get('cantidad_cuotas'):
             tarea('Cargar el plan de cuotas de %s' % a['nombre'],
-                  ['Admin'], 'Media', 'Administración',
+                  ['Hernán'], 'Media', 'Administración',
                   'Falta cantidad de cuotas, monto por cuota y fecha de la próxima.')
 
     faltan_datos = [a['nombre'] for a in alumnos if not a['email'] or not a['telefono']]
     if faltan_datos:
-        tarea('Completar email y teléfono de los alumnos', ['Admin'], 'Media', 'Operaciones',
+        tarea('Completar email y teléfono de los alumnos', ['Hernán'], 'Media', 'Operaciones',
               'Faltan datos de: ' + ', '.join(faltan_datos))
 
     tarea('Cargar los links de los recursos (scripts, contratos, formación)',

@@ -14,12 +14,30 @@
   /* Comisión por defecto si la persona no la tiene cargada en Equipo */
   var COMISION = { Closer: 10, Setter: 5 };
 
-  function yo() { return AE.auth.usuario(); }
-  function miRol() { return AE.auth.rol(); }
+  /* Un admin puede mirar el espacio de otra persona sin cerrar sesión */
+  var viendoComo = null;
 
-  function miFicha() {
-    return S.table('equipo').records.filter(function (p) { return p.nombre === yo(); })[0] || {};
+  function yo() { return viendoComo || AE.auth.usuario(); }
+
+  function miRol() {
+    if (!viendoComo) return AE.auth.rol();
+    return fichaDe(viendoComo).rol || 'Setter';
   }
+
+  function fichaDe(nombre) {
+    return S.table('equipo').records.filter(function (p) { return p.nombre === nombre; })[0] || {};
+  }
+
+  function miFicha() { return fichaDe(yo()); }
+
+  /* true si estoy mirando el espacio de otro, no el mío */
+  function espiando() { return !!viendoComo && viendoComo !== AE.auth.usuario(); }
+
+  function verComo(nombre) {
+    viendoComo = (nombre && nombre !== AE.auth.usuario()) ? nombre : null;
+  }
+
+  function esVendedor(rol) { return rol === 'Setter' || rol === 'Closer'; }
 
   function miComision() {
     var ficha = miFicha();
@@ -33,14 +51,29 @@
     var rol = miRol();
     host.innerHTML = '';
     host.appendChild(encabezado(ctx));
+    if (espiando()) host.appendChild(bannerPreview(ctx));
     host.appendChild(accesos(ctx));
     host.appendChild(metricas(rol));
     /* El tracker diario es lo primero que toca un setter cada día */
     if (rol === 'Setter') host.appendChild(kpisDiarios(ctx));
     host.appendChild(leadsPanel(ctx));
-    if (rol !== 'Setter') host.appendChild(llamadasPanel(ctx));
-    host.appendChild(cierresPanel(ctx));
-    host.appendChild(comisionesPanel());
+    if (rol === 'Closer') host.appendChild(llamadasPanel(ctx));
+    host.appendChild(tareasPanel(ctx));
+    if (esVendedor(rol)) {
+      host.appendChild(cierresPanel(ctx));
+      host.appendChild(comisionesPanel());
+    }
+  }
+
+  function bannerPreview(ctx) {
+    return el('div', { class: 'preview-bar' }, [
+      el('span', { text: 'Estás viendo el espacio de ' + viendoComo + ' · ' +
+        (fichaDe(viendoComo).rol || '') + '. Es exactamente lo que ve al entrar.' }),
+      el('button', {
+        class: 'btn2', text: 'Volver a mi espacio',
+        onclick: function () { verComo(null); ctx.refresh(); }
+      })
+    ]);
   }
 
   function encabezado(ctx) {
@@ -51,13 +84,38 @@
         onclick: function () { periodo = k; ctx.refresh(); }
       }));
     });
+    var titulo = espiando() ? 'Espacio de ' + yo() : 'Hola, ' + yo();
+    var bajada = esVendedor(miRol())
+      ? (espiando() ? 'Como lo ve ' + yo() + ' · ' + miRol() : 'Tu espacio de trabajo como ' + miRol().toLowerCase()) +
+        ' · comisión del ' + U.num(miComision()) + '%'
+      : 'Tus tareas, tus leads y el acceso a los espacios del equipo';
+
     return el('div', { class: 'dash-head' }, [
       el('div', {}, [
-        el('h2', { class: 'dash-title', text: 'Hola, ' + yo() }),
-        el('p', { class: 'muted small', text: 'Tu espacio de trabajo como ' + miRol().toLowerCase() +
-          ' · comisión del ' + U.num(miComision()) + '%' })
+        el('h2', { class: 'dash-title', text: titulo }),
+        el('p', { class: 'muted small', text: bajada })
       ]),
+      selectorDeEspacio(ctx),
       sel
+    ]);
+  }
+
+  /* Sólo para dueño y admin: mirar el espacio de cualquiera del equipo */
+  function selectorDeEspacio(ctx) {
+    if (!AE.perms.esAdmin()) return null;
+    var gente = S.table('equipo').records.filter(function (p) { return p.activo !== false && p.nombre; });
+    var sel = el('select', { class: 'inp inp--sm' });
+    sel.appendChild(el('option', { value: '', text: 'Mi espacio (' + AE.auth.usuario() + ')' }));
+    gente.filter(function (p) { return p.nombre !== AE.auth.usuario(); }).forEach(function (p) {
+      sel.appendChild(el('option', {
+        value: p.nombre, text: 'Ver el espacio de ' + p.nombre + ' · ' + (p.rol || ''),
+        selected: viendoComo === p.nombre
+      }));
+    });
+    sel.value = viendoComo || '';
+    sel.addEventListener('change', function () { verComo(sel.value); ctx.refresh(); });
+    return el('label', { class: 'ver-como' }, [
+      el('span', { class: 'proj__label', text: 'Ver como' }), sel
     ]);
   }
 
@@ -158,7 +216,12 @@
 
   function leadsPanel(ctx) {
     var campo = miRol() === 'Setter' ? 'setter' : 'closer';
-    var mios = S.allRows('leads').filter(function (l) { return l[campo] === yo() || !l[campo]; });
+    var mios = S.allRows('leads').filter(function (l) {
+      if (l[campo] === yo()) return true;
+      /* Los leads sin dueño aparecen en el espacio propio para que alguien los tome,
+         pero no cuando un admin está mirando el espacio de otra persona. */
+      return !l[campo] && !espiando();
+    });
     var abiertos = mios.filter(function (l) {
       return AE.schema.ETAPAS.abierto.indexOf(l.estado) >= 0;
     }).sort(function (a, b) {
@@ -202,7 +265,7 @@
     });
 
     return el('section', { class: 'panel panel--wide' }, [
-      el('h3', { class: 'panel__title', text: 'Mis leads y su seguimiento' }),
+      el('h3', { class: 'panel__title', text: espiando() ? 'Leads de ' + yo() : 'Mis leads y su seguimiento' }),
       cuerpo,
       el('button', {
         class: 'btn2', text: 'Ver todos mis leads',
@@ -296,7 +359,7 @@
     }
 
     return el('section', { class: 'panel panel--wide' }, [
-      el('h3', { class: 'panel__title', text: 'Mis KPIs diarios' }),
+      el('h3', { class: 'panel__title', text: espiando() ? 'KPIs diarios de ' + yo() : 'Mis KPIs diarios' }),
       el('p', { class: 'muted small', text: 'Objetivo de tasa de agenda: ' +
         Math.round(act.objetivoMin * 100) + '–' + Math.round(act.objetivoMax * 100) + '%. ' + act.estado }),
       cuerpo
@@ -334,7 +397,7 @@
       }
     }));
     return el('div', {}, [
-      el('h4', { class: 'acts__title', text: 'Cargar el día de hoy' }), fila
+      el('h4', { class: 'acts__title', text: espiando() ? 'Cargar el día de hoy de ' + yo() : 'Cargar el día de hoy' }), fila
     ]);
   }
 
@@ -347,7 +410,7 @@
 
     if (!mias.length) {
       return el('section', { class: 'panel panel--wide' }, [
-        el('h3', { class: 'panel__title', text: 'Mis llamadas' }),
+        el('h3', { class: 'panel__title', text: espiando() ? 'Llamadas de ' + yo() : 'Mis llamadas' }),
         el('p', { class: 'muted small', text: 'No hay llamadas en este periodo.' })
       ]);
     }
@@ -378,7 +441,58 @@
     tabla.appendChild(tb);
 
     return el('section', { class: 'panel panel--wide' }, [
-      el('h3', { class: 'panel__title', text: 'Mis llamadas' }), tabla
+      el('h3', { class: 'panel__title', text: espiando() ? 'Llamadas de ' + yo() : 'Mis llamadas' }), tabla
+    ]);
+  }
+
+  /* ---------------- tareas ---------------- */
+
+  function tareasDe(nombre) {
+    return S.allRows('tareas').filter(function (t) {
+      if (t.hecha) return false;
+      var asignados = Array.isArray(t.asignados) ? t.asignados : (t.asignados ? [t.asignados] : []);
+      return asignados.indexOf(nombre) >= 0;
+    }).sort(function (a, b) {
+      return (U.parseDate(a.vence) || Infinity) - (U.parseDate(b.vence) || Infinity);
+    });
+  }
+
+  function tareasPanel(ctx) {
+    var tareas = tareasDe(yo());
+    var box = el('div', { class: 'task-list' });
+
+    if (!tareas.length) {
+      box.appendChild(el('p', { class: 'muted small',
+        text: espiando() ? yo() + ' no tiene tareas pendientes.' : 'No tenés tareas pendientes. 🎉' }));
+    }
+
+    tareas.slice(0, 10).forEach(function (t) {
+      var vencida = t.vence && U.parseDate(t.vence) < new Date();
+      box.appendChild(el('label', { class: 'task' }, [
+        el('input', {
+          type: 'checkbox',
+          onchange: function () {
+            S.updateRecord('tareas', t.id, { hecha: true });
+            AE.ui.toast('Tarea marcada como hecha');
+            ctx.refresh();
+          }
+        }),
+        el('span', { class: 'task__title', text: t.titulo || 'Sin título' }),
+        t.prioridad ? el('span', { class: 'chip', style: '--chip:' + U.colorFor(t.prioridad), text: t.prioridad }) : null,
+        el('span', { class: 'task__due' + (vencida ? ' neg' : ''), text: t.vence ? U.formatDate(t.vence) : '' })
+      ]));
+    });
+
+    box.appendChild(el('div', { class: 'task__foot' }, [
+      el('button', {
+        class: 'btn2', text: 'Ver todas las tareas',
+        onclick: function () { AE.app.ir('#/view/v_tareas_mias'); }
+      })
+    ]));
+
+    return el('section', { class: 'panel panel--wide' }, [
+      el('h3', { class: 'panel__title', text: espiando() ? 'Tareas de ' + yo() : 'Mis tareas' }),
+      box
     ]);
   }
 
@@ -487,8 +601,10 @@
 
     if (!cierres.length) {
       return el('section', { class: 'panel panel--wide' }, [
-        el('h3', { class: 'panel__title', text: 'Mis cierres' }),
-        el('p', { class: 'muted small', text: 'Todavía no hay cierres tuyos en este periodo.' })
+        el('h3', { class: 'panel__title', text: espiando() ? 'Cierres de ' + yo() : 'Mis cierres' }),
+        el('p', { class: 'muted small', text: espiando()
+          ? 'No hay cierres de ' + yo() + ' en este periodo.'
+          : 'Todavía no hay cierres tuyos en este periodo.' })
       ]);
     }
 
@@ -527,7 +643,7 @@
     ])]));
 
     return el('section', { class: 'panel panel--wide' }, [
-      el('h3', { class: 'panel__title', text: 'Mis cierres' }),
+      el('h3', { class: 'panel__title', text: espiando() ? 'Cierres de ' + yo() : 'Mis cierres' }),
       tabla,
       pendiente > 0 ? el('p', { class: 'muted small', text:
         'Quedan ' + U.money(pendiente, cur) + ' por cobrar de estos clientes. ' +
@@ -591,7 +707,7 @@
     });
 
     return el('section', { class: 'panel panel--wide' }, [
-      el('h3', { class: 'panel__title', text: 'Mis comisiones' }),
+      el('h3', { class: 'panel__title', text: espiando() ? 'Comisiones de ' + yo() : 'Mis comisiones' }),
       el('p', { class: 'muted small', text: 'Se calculan sobre el cash efectivamente cobrado, al ' +
         U.num(miComision()) + '%. Cuenta lo que lleva tu nombre en el cobro y, si el cobro no dice ' +
         'quién fue, lo que pagaron tus leads. Si algo no coincide, avisale a administración.' }),
@@ -607,5 +723,8 @@
     ]);
   }
 
-  AE.espacio = { render: render, misComisiones: misComisiones, misCierres: misCierres };
+  AE.espacio = {
+    render: render, misComisiones: misComisiones, misCierres: misCierres,
+    verComo: verComo, viendo: function () { return yo(); }
+  };
 })(window.AE);
