@@ -24,7 +24,30 @@
     }, extra || {});
   }
 
-  function base() { return String(cfg().url).replace(/\/+$/, '') + '/rest/v1/' + TABLE; }
+  function base() { return normalizarUrl(cfg().url) + '/rest/v1/' + TABLE; }
+
+  /**
+   * Acepta la URL como venga: con espacios, sin https://, con barra final
+   * o con el /rest/v1 que Supabase muestra en la pantalla de Data API.
+   */
+  function normalizarUrl(valor) {
+    var u = String(valor || '').trim();
+    if (!u) return '';
+    u = u.replace(/\/+$/, '');
+    u = u.replace(/\/rest\/v1.*$/i, '');
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    return u.replace(/\/+$/, '');
+  }
+
+  function pareceClave(valor) {
+    var v = String(valor || '').trim();
+    return /^(sb_|eyJ)/.test(v);
+  }
+
+  function pareceUrl(valor) {
+    var v = String(valor || '').trim();
+    return /supabase\.(co|in)/i.test(v) || /^https?:\/\//i.test(v);
+  }
 
   /**
    * Traduce el error de Supabase a algo que se entienda y diga qué hacer.
@@ -74,7 +97,7 @@
    */
   function probar(url, key) {
     var anterior = U.deepClone(cfg());
-    S.settings().cloud = { url: url, key: key, enabled: true };
+    S.settings().cloud = { url: normalizarUrl(url), key: String(key || '').trim(), enabled: true };
     return pedir('GET', '?id=eq.' + ROW_ID + '&select=id')
       .then(function () {
         return pedir('POST', '', [{ id: '__test__', data: { ping: true }, updated_at: new Date().toISOString() }],
@@ -276,8 +299,17 @@
 
     function probarYGuardar(cerrar) {
       var u = url.value.trim(), k = key.value.trim();
+
+      /* Es fácil pegarlos al revés: si pasó, los acomodamos y avisamos */
+      if (pareceClave(u) && pareceUrl(k)) {
+        var swap = u; u = k; k = swap;
+        url.value = u; key.value = k;
+        AE.ui.toast('Estaban invertidos: acomodé la URL y la clave', 'warn');
+      }
+      u = normalizarUrl(u);
+      url.value = u;
       if (!on.checked) {
-        S.settings().cloud = { url: u, key: k, enabled: false };
+        S.settings().cloud = { url: normalizarUrl(u), key: k, enabled: false };
         S.save(); notify();
         AE.ui.toast('Sincronización desactivada');
         if (refresh) refresh();
@@ -286,6 +318,18 @@
       if (!u || !k) {
         aviso.className = 'cloud-status is-error';
         aviso.textContent = 'Faltan la URL del proyecto y la clave anónima.';
+        return false;
+      }
+      if (!pareceUrl(u)) {
+        aviso.className = 'cloud-status is-error';
+        aviso.textContent = 'La URL del proyecto no parece correcta. Tiene que ser algo como ' +
+          'https://xxxxxxxx.supabase.co (Supabase → Settings → Data API → Project URL).';
+        return false;
+      }
+      if (pareceUrl(k) || !k) {
+        aviso.className = 'cloud-status is-error';
+        aviso.textContent = 'En "Clave anónima" va la clave, no una dirección web. ' +
+          'Es la que empieza con sb_publishable_ o con eyJ.';
         return false;
       }
       aviso.className = 'cloud-status';
@@ -298,7 +342,7 @@
           return;
         }
         var yaSincronizado = !!(cfg() || {}).sincronizado;
-        S.settings().cloud = { url: u, key: k, enabled: true, sincronizado: yaSincronizado };
+        S.settings().cloud = { url: normalizarUrl(u), key: k, enabled: true, sincronizado: yaSincronizado };
         S.save();
         notify();
         aviso.className = 'cloud-status is-ok';
@@ -318,8 +362,10 @@
       wide: true,
       body: el('div', {}, [
         el('p', { class: 'muted', text: 'Sin esto, los datos viven sólo en este navegador y cada uno ve lo suyo. Con esto, Mariano, los closers y los setters trabajan sobre la misma base.' }),
-        AE.ui.formRow('URL del proyecto', url, 'Settings → API → Project URL. Termina en .supabase.co'),
-        AE.ui.formRow('Clave anónima', key, 'Settings → API → la clave "anon public" (la larga).'),
+        AE.ui.formRow('URL del proyecto', url,
+          'Supabase → Settings → Data API → Project URL. Empieza con https:// y termina en .supabase.co'),
+        AE.ui.formRow('Clave anónima', key,
+          'Supabase → Settings → API Keys → la clave que empieza con sb_publishable_ (o la "anon public").'),
         AE.ui.formRow('Activar sincronización', on),
         aviso,
         zonaLink,
