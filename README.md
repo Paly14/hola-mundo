@@ -1,4 +1,15 @@
-# Alpha Ecommerce — Landing VSL
+# Alpha Ecommerce
+
+Dos cosas en un mismo repo:
+
+1. **Landing VSL** (raíz) — la página pública: video principal, casos de éxito y WhatsApp.
+2. **Alpha CRM** ([`/app`](app/)) — el panel interno tipo Airtable: leads, pipeline de
+   setters y closers, recursos, métricas y proyecciones. Se abre en `/app/`.
+   Todo explicado en [`app/README.md`](app/README.md).
+
+---
+
+## Landing VSL
 
 Landing page tipo **VSL** (Video Sales Letter) para Alpha Ecommerce:
 un video principal, casos de éxito en video (YouTube) y botón de WhatsApp.
@@ -40,4 +51,5 @@ index.html            → estructura de la página
 assets/css/styles.css → diseño
 assets/js/config.js   → 👈 EDITÁS ACÁ (textos, WhatsApp, videos)
 assets/js/app.js      → lógica (no hace falta tocar)
+app/                  → Alpha CRM, el panel interno (ver app/README.md)
 ```
