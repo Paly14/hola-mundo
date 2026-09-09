@@ -102,10 +102,19 @@ h1, h2, h3, h4, strong { font-family: 'Sora', sans-serif; letter-spacing: -0.01e
 }
 .side__item:hover { background: var(--line-soft); }
 .side__item.is-on { background: var(--brand-soft); color: var(--brand-dark); font-weight: 600; }
+.side__item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.side__row { display: flex; align-items: center; border-radius: 8px; }
+.side__row:hover { background: var(--line-soft); }
+.side__row.is-on { background: var(--brand-soft); }
+.side__row.is-on .side__item { color: var(--brand-dark); font-weight: 600; }
+.side__row .side__item:hover { background: none; }
+.side__more--view { opacity: 0; flex: 0 0 auto; }
+.side__row:hover .side__more--view { opacity: 1; }
 .side__item--dash { margin-top: 4px; font-weight: 600; }
 .side__ico { width: 18px; text-align: center; }
 .side__vico { width: 14px; color: var(--muted); font-size: 11px; }
-.side__count { margin-left: auto; font-size: 11px; color: var(--muted); }
+.side__count { font-size: 11px; color: var(--muted); }
 .side__add { font-size: 12px; padding: 5px 9px 5px 30px; text-align: left; width: 100%; }
 .side__add:hover { color: var(--brand-dark); }
 .side__add--table { margin-top: 12px; padding-left: 12px; border-top: 1px solid var(--line-soft); padding-top: 12px; }

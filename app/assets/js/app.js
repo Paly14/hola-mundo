@@ -99,19 +99,29 @@
         }) : null
       ]));
       AE.perms.vistasVisibles(t.id).forEach(function (v) {
-        group.appendChild(el('button', {
-          class: 'side__item' + (route.viewId === v.id ? ' is-on' : ''),
-          onclick: function () { ir('#/view/' + v.id); }
-        }, [
-          el('span', { class: 'side__vico', text: v.type === 'kanban' ? '▤' : v.type === 'gallery' ? '▢' : '▦' }),
-          el('span', { text: v.name }),
-          el('span', { class: 'side__count', text: S.rowsOf(v.id).length })
-        ]));
+        var fila = el('div', { class: 'side__row' + (route.viewId === v.id ? ' is-on' : '') }, [
+          el('button', {
+            class: 'side__item',
+            onclick: function () { ir('#/view/' + v.id); }
+          }, [
+            el('span', { class: 'side__vico', text: v.type === 'kanban' ? '▤' : v.type === 'gallery' ? '▢' : '▦' }),
+            el('span', { class: 'side__item-name', text: v.name }),
+            el('span', { class: 'side__count', text: S.rowsOf(v.id).length })
+          ]),
+          /* Renombrar y borrar vistas, sin tener que entrar a cada una */
+          AE.perms.puedeEditarEstructura() ? el('button', {
+            class: 'side__more side__more--view', html: '⋯', title: 'Opciones de la vista',
+            onclick: function (e) { e.stopPropagation(); menuVista(e.currentTarget, t, v); }
+          }) : null
+        ]);
+        group.appendChild(fila);
       });
-      group.appendChild(el('button', {
-        class: 'side__add', text: '+ Vista',
-        onclick: function (e) { menuNuevaVista(e.currentTarget, t); }
-      }));
+      if (AE.perms.puedeEditarEstructura()) {
+        group.appendChild(el('button', {
+          class: 'side__add', text: '+ Vista',
+          onclick: function (e) { menuNuevaVista(e.currentTarget, t); }
+        }));
+      }
       host.appendChild(group);
     });
 
@@ -195,6 +205,66 @@
         }
       }
     ], { align: 'right' });
+  }
+
+  function menuVista(anchor, tabla, vista) {
+    var ultima = S.views(tabla.id).length <= 1;
+    AE.ui.menu(anchor, [
+      { icon: '✎', label: 'Renombrar', onClick: function () { renombrarVista(vista); } },
+      { icon: '⧉', label: 'Duplicar', onClick: function () { duplicarVista(tabla, vista); } },
+      { separator: true },
+      {
+        icon: '🗑',
+        label: ultima ? 'No se puede borrar la única vista' : 'Eliminar vista',
+        danger: !ultima,
+        onClick: function () {
+          if (ultima) {
+            AE.ui.toast('Cada tabla necesita al menos una vista', 'warn');
+            return;
+          }
+          AE.ui.confirm('¿Eliminar la vista "' + vista.name + '"? Los registros no se borran, ' +
+            'sólo esta forma de verlos.', { danger: true, ok: 'Eliminar' })
+            .then(function (ok) {
+              if (!ok) return;
+              var iba = route.viewId === vista.id;
+              S.deleteView(vista.id);
+              if (iba) ir('#/view/' + S.views(tabla.id)[0].id);
+              render();
+              AE.ui.toast('Vista eliminada');
+            });
+        }
+      }
+    ], { align: 'right' });
+  }
+
+  function renombrarVista(vista) {
+    var input = el('input', { class: 'inp', value: vista.name });
+    AE.ui.modal({
+      title: 'Renombrar vista',
+      body: AE.ui.formRow('Nombre', input),
+      actions: [
+        { label: 'Cancelar' },
+        {
+          label: 'Guardar', kind: 'primary',
+          onClick: function () {
+            var nombre = input.value.trim();
+            if (!nombre) return false;
+            S.updateView(vista.id, { name: nombre });
+            render();
+          }
+        }
+      ]
+    });
+  }
+
+  function duplicarVista(tabla, vista) {
+    var copia = S.addView(tabla.id, vista.name + ' (copia)', vista.type);
+    S.updateView(copia.id, {
+      filters: U.deepClone(vista.filters || []), sorts: U.deepClone(vista.sorts || []),
+      hidden: (vista.hidden || []).slice(), groupBy: vista.groupBy, stackBy: vista.stackBy
+    });
+    ir('#/view/' + copia.id);
+    render();
   }
 
   function menuNuevaVista(anchor, t) {
