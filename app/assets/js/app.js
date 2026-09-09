@@ -138,6 +138,7 @@
         class: 'side__foot-btn', text: '⚙︎ Datos y ajustes',
         onclick: function (e) { menuAjustes(e.currentTarget); }
       }) : null,
+      chipCotizacion(),
       el('div', { class: 'side__version', title: 'Versión publicada del CRM',
         text: 'v ' + AE.schema.VERSION }),
       el('button', {
@@ -149,6 +150,29 @@
     ]));
 
     pintarEstadoNube();
+  }
+
+  /* Si la cotización quedó vieja, mejor que salte a la vista */
+  function chipCotizacion() {
+    var c = S.settings().cotizacion;
+    if (!c || !c.valor) {
+      if (!AE.perms.esAdmin()) return null;
+      return el('button', {
+        class: 'side__foot-btn is-warn', text: '💱 Cargá la cotización',
+        onclick: editarCotizacion
+      });
+    }
+    var dias = c.fecha ? U.daysBetween(c.fecha, new Date()) : null;
+    var vieja = dias != null && dias > 7;
+    return el('button', {
+      class: 'side__foot-btn' + (vieja ? ' is-warn' : ''),
+      title: c.fecha ? 'Cargada el ' + U.formatDate(c.fecha) : '',
+      text: '💱 Dólar ' + U.num(c.valor) + (vieja ? ' · desactualizada' : ''),
+      onclick: function () {
+        if (AE.perms.esAdmin()) editarCotizacion();
+        else AE.ui.toast('La cotización la actualiza administración', 'warn');
+      }
+    });
   }
 
   function pintarEstadoNube() {
@@ -306,6 +330,7 @@
   function menuAjustes(anchor) {
     AE.ui.menu(anchor, [
       { icon: '🏷', label: 'Nombre y moneda', onClick: ajustesGenerales },
+      { icon: '💱', label: 'Cotización del dólar', onClick: editarCotizacion },
       { icon: '🛡', label: 'Quién ve qué (permisos)', onClick: function () { AE.perms.editor(render); } },
       { icon: '☁︎', label: 'Sincronizar ahora', onClick: function () { AE.cloud.sync(false).then(render); } },
       { separator: true },
@@ -342,6 +367,41 @@
         'y se pierde lo que hayan cargado. Bajate una copia antes (Descargar copia JSON). ¿Seguir igual?';
     }
     return texto + ' ¿Seguir?';
+  }
+
+  /* La cotización se carga a mano cada semana; con eso convertimos los
+     cobros en pesos a dólares al registrarlos. */
+  function editarCotizacion() {
+    var c = S.settings().cotizacion || { valor: null, fecha: '', moneda: 'ARS' };
+    var valor = el('input', { class: 'inp', type: 'number', min: '0', step: '0.01',
+      value: c.valor || '', placeholder: 'Ej: 1560' });
+    var fecha = el('input', { class: 'inp', type: 'date', value: c.fecha || U.today() });
+
+    AE.ui.modal({
+      title: 'Cotización del dólar',
+      body: el('div', {}, [
+        el('p', { class: 'muted', text: 'Cuántos pesos vale un dólar esta semana. ' +
+          'Se usa para pasar a USD los cobros que entran en pesos.' }),
+        AE.ui.formRow('Pesos por dólar', valor),
+        AE.ui.formRow('Fecha de la cotización', fecha),
+        c.valor ? el('p', { class: 'muted small', text: 'Ahora está en ' + U.num(c.valor) +
+          (c.fecha ? ' desde el ' + U.formatDate(c.fecha) : '') }) : null
+      ]),
+      actions: [
+        { label: 'Cancelar' },
+        {
+          label: 'Guardar', kind: 'primary',
+          onClick: function () {
+            var n = U.toNumber(valor.value);
+            if (!n) { AE.ui.toast('Poné cuántos pesos vale un dólar', 'warn'); return false; }
+            S.settings().cotizacion = { valor: n, fecha: fecha.value || U.today(), moneda: 'ARS' };
+            S.emit('cotizacion');
+            render();
+            AE.ui.toast('Cotización actualizada');
+          }
+        }
+      ]
+    });
   }
 
   function ajustesGenerales() {

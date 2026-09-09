@@ -95,6 +95,8 @@
     var metodo2 = selector(metodos, '');
     var monto3 = el('input', { class: 'inp', type: 'number', min: '0', step: '0.01' });
     var metodo3 = selector(metodos, '');
+    var enPesos = el('input', { class: 'inp', type: 'number', min: '0', step: '0.01', placeholder: 'Monto en $' });
+    var avisoPesos = el('span', { class: 'form-hint' });
     var comisionPlataforma = el('input', { class: 'inp', type: 'number', min: '0', step: '0.01', placeholder: '0' });
     var netoAviso = el('span', { class: 'form-hint' });
     var comprobante = el('input', { class: 'inp', type: 'url', placeholder: 'Link al comprobante (Drive, Dropbox…)' });
@@ -167,6 +169,7 @@
           AE.ui.formRow('Método de pago 2', metodo2),
           AE.ui.formRow('Cobrado método 3', monto3),
           AE.ui.formRow('Método de pago 3', metodo3),
+          conversorPesos(),
           AE.ui.formRow('Comisión de la plataforma (' + cur + ')',
             el('div', {}, [comisionPlataforma, netoAviso]),
             'Lo que se queda Stripe, PayPal, Mercado Pago… Dejalo en 0 si fue transferencia.'),
@@ -175,6 +178,42 @@
       secPlan,
       secDownsell
     ]);
+
+    /* Si el cliente pagó en pesos, se pasa a dólares con la cotización de la semana */
+    function conversorPesos() {
+      var cot = S.settings().cotizacion || {};
+      if (!cot.valor) return null;
+
+      function convertir() {
+        var pesos = U.toNumber(enPesos.value);
+        if (!pesos) { avisoPesos.textContent = ''; return null; }
+        var dolares = Math.round((pesos / cot.valor) * 100) / 100;
+        avisoPesos.textContent = U.num(pesos) + ' pesos = ' + U.money(dolares, cur) +
+          '  ·  dólar a ' + U.num(cot.valor) +
+          (cot.fecha ? ' del ' + U.formatDate(cot.fecha) : '');
+        return dolares;
+      }
+      enPesos.addEventListener('input', convertir);
+
+      return AE.ui.formRow('¿Cobraste en pesos?',
+        el('div', { class: 'conv' }, [
+          el('div', { class: 'conv__row' }, [
+            enPesos,
+            el('button', {
+              class: 'btn2', type: 'button', text: 'Pasar a ' + cur,
+              onclick: function () {
+                var dolares = convertir();
+                if (!dolares) { AE.ui.toast('Poné el monto en pesos', 'warn'); return; }
+                cashUSD.value = dolares;
+                cashUSD.dispatchEvent(new Event('change'));
+                AE.ui.toast('Cargado ' + U.money(dolares, cur));
+              }
+            })
+          ]),
+          avisoPesos
+        ]),
+        'Escribí el monto en pesos y pasalo a ' + cur + ' con la cotización de la semana.');
+    }
 
     /* ---------- comportamiento ---------- */
 

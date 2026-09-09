@@ -341,6 +341,19 @@ body.is-dash .view-body { padding: 20px 22px 40px; }
 .gcard__star { color: var(--brand); }
 .gcard__chips { display: flex; gap: 5px; flex-wrap: wrap; }
 .gcard__desc { color: var(--muted); font-size: 13px; }
+.gcard__datos { display: grid; gap: 4px; }
+.gdato {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 6px;
+  align-items: center; background: #fbf9f7; border-radius: 8px; padding: 5px 8px;
+}
+.gdato__label { grid-column: 1 / -1; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.gdato__valor { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gdato__copiar {
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  font-size: 13px; padding: 0 2px; border-radius: 5px;
+}
+.gdato__copiar:hover { color: var(--brand-dark); background: var(--line-soft); }
+.copia-oculta { position: fixed; left: -9999px; opacity: 0; }
 .gcard__foot { margin-top: auto; display: flex; gap: 8px; align-items: center; }
 .gcard--new {
   border-style: dashed; color: var(--muted); cursor: pointer; font: inherit;
@@ -616,6 +629,8 @@ body.is-auth .main { display: none; }
 .form-sec__grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); }
 .form-sec__grid .frow { margin-bottom: 0; }
 .form-hint { display: block; font-size: 11px; color: var(--brand-dark); margin-top: 3px; }
+.conv__row { display: flex; gap: 6px; }
+.conv__row .inp { flex: 1; }
 .form-error { color: #e05260; font-size: 13px; font-weight: 600; }
 .form-error:empty { display: none; }
 

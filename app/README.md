@@ -45,6 +45,11 @@ En la tabla *Equipo*, el campo **Comisiona sobre** define la base: *Sus cierres*
 normal para setters y closers) o *Todas las ventas*, para quien comisiona sobre todo
 lo que factura el negocio.
 
+**Cotización del dólar**: se carga a mano cada semana desde *⚙︎ Datos y ajustes →
+Cotización del dólar*. Aparece al pie de la barra lateral y avisa en rojo cuando pasa
+una semana sin actualizarse. En el formulario de ingresos habilita un conversor: se
+escribe el monto en pesos y lo pasa a USD con esa cotización.
+
 **Comisión de la plataforma**: al cargar un ingreso se anota cuánto se queda Stripe,
 PayPal o Mercado Pago. El formulario muestra el neto en vivo y el panel separa
 *cobrado bruto*, *lo que se llevó la plataforma* y *neto que entró*. **Las comisiones
@@ -60,7 +65,8 @@ del equipo salen del neto**: lo que se lleva la plataforma no comisiona para nad
 |---|---|
 | **Mi espacio** (setter y closer) | La portada de cada vendedor: accesos directos, sus KPIs, su **tracker diario** (el setter carga el día ahí mismo) o sus llamadas (el closer), sus leads con el seguimiento y notas, **sus cierres** y, abajo de todo, **sus comisiones** mes a mes. |
 | **Cargar ingreso** | Un formulario guiado para cargar cada pago: datos del ingreso, hasta 3 métodos de pago, plan de cuotas y detalle del downsell. Crea el cobro, actualiza el lead y crea o actualiza la ficha del alumno en un solo paso. Lo usan el closer y administración. |
-| **Programas** | Catálogo con el precio de lista, la duración y qué incluye cada programa. Programa Completo: 997 USD. |
+| **Programas** | Catálogo con el precio de lista, la duración y qué incluye cada programa. |
+| **Métodos de cobro** | Los links de pago (Whop, Mercado Pago), los datos de transferencia en pesos y en dólares y la wallet de cripto, con botón de copiar en cada dato. Lo ven el closer, el dueño y el admin. |
 | **Panel y proyecciones** | KPIs del mes, embudo, cash collected por mes vs. meta, alumnos y cobranzas, facturación por método, saldos por cobrar, ranking del equipo, actividad del setter y proyección de cierre de mes y de los próximos 3 meses. |
 | **Leads y Clientes** | La tabla principal, con los campos del CRM del closer: fuente, ¿se presentó?, ¿calificaba?, cuánto pagó en la llamada y en seguimiento, link de Fathom, Manychat, reagenda y cómo salió la call. Vistas *Pipeline* (kanban), *Panel Setter*, *Panel Closer* y *Cierres*. |
 | **Facturación** | Cada cobro: cliente, fecha, monto, cuota, método, comprobante. El *cash collected* de un cliente sale siempre de acá. Solo Dueño y Admin. |

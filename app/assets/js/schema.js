@@ -58,7 +58,7 @@
       /* Su espacio de trabajo: sus leads, lo que vende y sus tareas.
          La gestión de alumnos, la facturación y las proyecciones son de
          Dueño y Admin. */
-      tablas: ['leads', 'actividades', 'programas', 'tareas', 'recursos'],
+      tablas: ['leads', 'actividades', 'programas', 'metodos_cobro', 'tareas', 'recursos'],
       ocultos: { leads: ['cash_collected'] },
       propios: true, admin: false
     },
@@ -283,6 +283,36 @@
       ]
     },
     {
+      id: 'metodos_cobro', name: 'Métodos de cobro', icon: '🔗', primary: 'nombre',
+      fields: [
+        field('nombre', 'Nombre', 'text', { width: 210 }),
+        field('tipo', 'Tipo', 'select', {
+          width: 145,
+          options: [
+            { name: 'Link de pago', color: '#3ec9a7' },
+            { name: 'Transferencia', color: '#5b9dff' },
+            { name: 'Cripto', color: '#f2c14e' }
+          ]
+        }),
+        field('moneda', 'Moneda', 'select', {
+          width: 110,
+          options: [{ name: 'USD' }, { name: 'ARS' }, { name: 'USDT' }]
+        }),
+        field('programa', 'Programa', 'select', {
+          width: 170, options: [],
+          optionsFrom: { table: 'programas', field: 'nombre' }
+        }),
+        field('precio', 'Precio', 'currency', { width: 120 }),
+        field('link', 'Link de pago', 'url', { width: 260 }),
+        field('titular', 'Titular', 'text', { width: 180 }),
+        field('documento', 'CUIT / CUIL', 'text', { width: 140 }),
+        field('datos', 'Datos de la cuenta', 'text', { width: 260 }),
+        field('banco', 'Banco o red', 'text', { width: 160 }),
+        field('instrucciones', 'Instrucciones', 'longtext', { width: 280 }),
+        field('activo', 'Activo', 'checkbox', { width: 90 })
+      ]
+    },
+    {
       id: 'alumnos', name: 'Alumnos', icon: '🎓', primary: 'nombre',
       fields: [
         field('nombre', 'Nombre completo', 'text', { width: 200 }),
@@ -474,6 +504,14 @@
       filters: [], sorts: [{ fieldId: 'fecha', dir: 'desc' }], groupBy: 'lead', hidden: ['notas', 'closer']
     },
     {
+      id: 'v_cobros_links', tableId: 'metodos_cobro', name: 'Links y datos de pago', type: 'gallery',
+      filters: [{ fieldId: 'activo', op: 'is', value: true }], sorts: [], hidden: []
+    },
+    {
+      id: 'v_cobros_tabla', tableId: 'metodos_cobro', name: 'Todos los métodos', type: 'grid',
+      filters: [], sorts: [], hidden: []
+    },
+    {
       id: 'v_programas', tableId: 'programas', name: 'Catálogo', type: 'grid',
       filters: [], sorts: [{ fieldId: 'precio_lista', dir: 'desc' }], hidden: []
     },
@@ -530,7 +568,7 @@
 
   /* Se sube en cada publicación: sirve para saber de un vistazo si el
      navegador está viendo la última versión o una copia vieja en caché. */
-  var VERSION = '2026-09-09 · 5';
+  var VERSION = '2026-09-09 · 6';
 
   AE.schema = {
     VERSION: VERSION,
@@ -546,9 +584,12 @@
       permisos: PERMISOS,
       /* Se sube cuando cambian los permisos por defecto, para que las bases
          ya guardadas se actualicen en vez de quedarse con los viejos. */
-      permisosVersion: 3,
+      permisosVersion: 4,
       /* Objetivo de tasa de agenda del setter (agendas / conversaciones) */
       objetivos: { tasaAgendaMin: 0.08, tasaAgendaMax: 0.12 },
+      /* Cotización del dólar para pasar los cobros en pesos a USD.
+         Se actualiza a mano cada semana desde Datos y ajustes. */
+      cotizacion: { valor: null, fecha: '', moneda: 'ARS' },
       cloud: { url: '', key: '', enabled: false }
     }
   };
