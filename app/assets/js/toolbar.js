@@ -30,7 +30,10 @@
           ], { align: 'right' });
         }
       }),
-      el('button', {
+      table.id === 'pagos' ? el('button', {
+        class: 'tbtn tbtn--primary', text: '＋ Cargar ingreso',
+        onclick: function () { AE.ingresoForm.abrir({ onSave: ctx.refresh }); }
+      }) : el('button', {
         class: 'tbtn tbtn--primary', text: '+ Registro',
         onclick: function () {
           var rec = S.createRecord(table.id, AE.defaults.para(table.id));

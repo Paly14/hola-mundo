@@ -52,6 +52,44 @@
       "claveInicial": true
     }
   ],
+  "programas": [
+    {
+      "id": "rec_prog_programacompleto",
+      "nombre": "Programa Completo",
+      "tipo": "Programa principal",
+      "precio_lista": 997,
+      "duracion_dias": 90,
+      "que_incluye": "Programa completo de Alpha Ecommerce: formación, acompañamiento y comunidad.",
+      "activo": true
+    },
+    {
+      "id": "rec_prog_downsell",
+      "nombre": "Downsell",
+      "tipo": "Downsell",
+      "precio_lista": 300,
+      "duracion_dias": 90,
+      "que_incluye": "Versión reducida del programa. Dejá acá qué se entrega exactamente.",
+      "activo": true
+    },
+    {
+      "id": "rec_prog_mentoria11",
+      "nombre": "Mentoría 1:1",
+      "tipo": "Programa principal",
+      "precio_lista": null,
+      "duracion_dias": 90,
+      "que_incluye": "",
+      "activo": true
+    },
+    {
+      "id": "rec_prog_acompanamiento",
+      "nombre": "Acompañamiento",
+      "tipo": "Programa principal",
+      "precio_lista": null,
+      "duracion_dias": 90,
+      "que_incluye": "",
+      "activo": true
+    }
+  ],
   "leads": [
     {
       "id": "rec_lead_marcelovazquez",
@@ -231,6 +269,12 @@
       "total_pagado": 647,
       "saldo": 450,
       "proxima_cuota": "",
+      "cantidad_cuotas": null,
+      "monto_cuota": null,
+      "pagado_en_cuotas": null,
+      "cuotas_pagadas": null,
+      "downsell_monto": null,
+      "downsell_entregado": "",
       "lead": "",
       "comprobantes": "",
       "resultados": "ya importo",
@@ -252,6 +296,12 @@
       "total_pagado": 250,
       "saldo": 250,
       "proxima_cuota": "2026-09-26",
+      "cantidad_cuotas": null,
+      "monto_cuota": null,
+      "pagado_en_cuotas": null,
+      "cuotas_pagadas": null,
+      "downsell_monto": null,
+      "downsell_entregado": "",
       "lead": "",
       "comprobantes": "",
       "resultados": "",
@@ -270,9 +320,15 @@
       "dias_restantes": null,
       "modalidad": "Pago completo",
       "precio_total": 300,
-      "total_pagado": 0,
-      "saldo": 300,
+      "total_pagado": 300,
+      "saldo": 0,
       "proxima_cuota": "",
+      "cantidad_cuotas": null,
+      "monto_cuota": null,
+      "pagado_en_cuotas": null,
+      "cuotas_pagadas": null,
+      "downsell_monto": 300,
+      "downsell_entregado": "",
       "lead": "rec_lead_facundomino",
       "comprobantes": "",
       "resultados": "",
@@ -292,7 +348,10 @@
       "metodo": "",
       "closer": "",
       "factura": "",
-      "notas": "Migrado de Gestión de Alumnos."
+      "notas": "Migrado de Gestión de Alumnos.",
+      "programa": "Programa Completo",
+      "naturaleza": "Cuota",
+      "setter": ""
     },
     {
       "id": "rec_pago_matias",
@@ -306,7 +365,27 @@
       "metodo": "",
       "closer": "",
       "factura": "",
-      "notas": "Migrado de Gestión de Alumnos."
+      "notas": "Migrado de Gestión de Alumnos.",
+      "programa": "Downsell",
+      "naturaleza": "Downsell",
+      "setter": ""
+    },
+    {
+      "id": "rec_pago_facundomino",
+      "concepto": "Downsell — Facundo Miño",
+      "alumno": "rec_alu_facundomino",
+      "lead": "rec_lead_facundomino",
+      "fecha": "2026-09-01",
+      "cuota": null,
+      "monto": 300,
+      "tipo": "Pago total",
+      "naturaleza": "Downsell",
+      "programa": "Downsell",
+      "metodo": "",
+      "closer": "Gabo",
+      "setter": "",
+      "factura": "",
+      "notas": "Pago del downsell confirmado por el equipo."
     }
   ],
   "setter_dia": [
@@ -496,21 +575,6 @@
     },
     {
       "id": "rec_tar_02",
-      "titulo": "Cobrar saldo de Facundo Miño (300 USD)",
-      "asignados": [
-        "Admin"
-      ],
-      "estado": "Pendiente",
-      "hecha": false,
-      "prioridad": "Alta",
-      "area": "Administración",
-      "vence": "",
-      "lead": "",
-      "detalle": "Programa Downsell. Próxima cuota: sin definir",
-      "creada_por": "Admin"
-    },
-    {
-      "id": "rec_tar_03",
       "titulo": "Cobrar saldo de Matias (250 USD)",
       "asignados": [
         "Admin"
@@ -525,23 +589,99 @@
       "creada_por": "Admin"
     },
     {
-      "id": "rec_tar_04",
-      "titulo": "Conciliar el pago de Facundo Miño (300 USD)",
+      "id": "rec_tar_03",
+      "titulo": "Anotar qué se le entregó del downsell a Matias",
       "asignados": [
-        "Admin",
+        "Mariano",
         "Gabo"
       ],
       "estado": "Pendiente",
       "hecha": false,
-      "prioridad": "Alta",
-      "area": "Administración",
+      "prioridad": "Media",
+      "area": "Operaciones",
       "vence": "",
       "lead": "",
-      "detalle": "Figura cobrado en el CRM del closer pero no aparece en Gestión de Alumnos.",
+      "detalle": "Campo \"Qué se le entregó del downsell\" en la ficha del alumno.",
+      "creada_por": "Admin"
+    },
+    {
+      "id": "rec_tar_04",
+      "titulo": "Anotar qué se le entregó del downsell a Facundo Miño",
+      "asignados": [
+        "Mariano",
+        "Gabo"
+      ],
+      "estado": "Pendiente",
+      "hecha": false,
+      "prioridad": "Media",
+      "area": "Operaciones",
+      "vence": "",
+      "lead": "",
+      "detalle": "Campo \"Qué se le entregó del downsell\" en la ficha del alumno.",
       "creada_por": "Admin"
     },
     {
       "id": "rec_tar_05",
+      "titulo": "Revisar el precio de Leon: 1097 USD contra 997 de lista",
+      "asignados": [
+        "Admin"
+      ],
+      "estado": "Pendiente",
+      "hecha": false,
+      "prioridad": "Media",
+      "area": "Administración",
+      "vence": "",
+      "lead": "",
+      "detalle": "Puede ser un plan de cuotas con recargo o un precio acordado distinto.",
+      "creada_por": "Admin"
+    },
+    {
+      "id": "rec_tar_06",
+      "titulo": "Revisar el precio de Matias: 500 USD contra 300 de lista",
+      "asignados": [
+        "Admin"
+      ],
+      "estado": "Pendiente",
+      "hecha": false,
+      "prioridad": "Media",
+      "area": "Administración",
+      "vence": "",
+      "lead": "",
+      "detalle": "Puede ser un plan de cuotas con recargo o un precio acordado distinto.",
+      "creada_por": "Admin"
+    },
+    {
+      "id": "rec_tar_07",
+      "titulo": "Cargar el plan de cuotas de Leon",
+      "asignados": [
+        "Admin"
+      ],
+      "estado": "Pendiente",
+      "hecha": false,
+      "prioridad": "Media",
+      "area": "Administración",
+      "vence": "",
+      "lead": "",
+      "detalle": "Falta cantidad de cuotas, monto por cuota y fecha de la próxima.",
+      "creada_por": "Admin"
+    },
+    {
+      "id": "rec_tar_08",
+      "titulo": "Cargar el plan de cuotas de Matias",
+      "asignados": [
+        "Admin"
+      ],
+      "estado": "Pendiente",
+      "hecha": false,
+      "prioridad": "Media",
+      "area": "Administración",
+      "vence": "",
+      "lead": "",
+      "detalle": "Falta cantidad de cuotas, monto por cuota y fecha de la próxima.",
+      "creada_por": "Admin"
+    },
+    {
+      "id": "rec_tar_09",
       "titulo": "Completar email y teléfono de los alumnos",
       "asignados": [
         "Admin"
@@ -556,7 +696,7 @@
       "creada_por": "Admin"
     },
     {
-      "id": "rec_tar_06",
+      "id": "rec_tar_10",
       "titulo": "Cargar los links de los recursos (scripts, contratos, formación)",
       "asignados": [
         "Mariano"

@@ -57,6 +57,9 @@
   /* Puede ver plata: facturación, cash collected, comisiones */
   function veFacturacion() { return esAdmin(); }
 
+  /* El closer carga los ingresos que cierra, aunque después no vea la caja */
+  function puedeCargarIngreso() { return esAdmin() || rol() === 'Closer'; }
+
   /* ---------------- editor de permisos (sólo admins) ---------------- */
 
   function editor(refresh) {
@@ -131,7 +134,7 @@
     tablasVisibles: tablasVisibles, camposOcultos: camposOcultos, puedeVerCampo: puedeVerCampo,
     puedeVerVista: puedeVerVista, vistasVisibles: vistasVisibles,
     puedeEditarEstructura: puedeEditarEstructura, soloPropios: soloPropios,
-    veFacturacion: veFacturacion, editor: editor
+    veFacturacion: veFacturacion, puedeCargarIngreso: puedeCargarIngreso, editor: editor
   };
 })(window.AE);
 

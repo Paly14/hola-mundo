@@ -64,7 +64,17 @@
     host.appendChild(el('button', {
       class: 'side__item side__item--dash' + (route.tipo === 'dashboard' ? ' is-on' : ''),
       onclick: function () { ir('#/dashboard'); }
-    }, [el('span', { class: 'side__ico', text: '📊' }), el('span', { text: 'Panel y proyecciones' })]));
+    }, [
+      el('span', { class: 'side__ico', text: AE.perms.esAdmin() ? '📊' : '🏠' }),
+      el('span', { text: AE.perms.esAdmin() ? 'Panel y proyecciones' : 'Mi espacio' })
+    ]));
+
+    if (AE.perms.puedeCargarIngreso()) {
+      host.appendChild(el('button', {
+        class: 'side__cta', text: '＋ Cargar ingreso',
+        onclick: function () { AE.ingresoForm.abrir({ onSave: render }); }
+      }));
+    }
 
     AE.perms.tablasVisibles().forEach(function (t) {
       var group = el('div', { class: 'side__group' });
@@ -298,12 +308,14 @@
     if (route.tipo === 'dashboard') {
       document.body.classList.add('is-dash');
       // Sólo se ve en pantallas chicas: da acceso al menú lateral
+      var esAdmin = AE.perms.esAdmin();
       head.appendChild(el('div', { class: 'view-head view-head--dash' }, [
         el('button', { class: 'burger', html: '☰', onclick: function () { document.body.classList.toggle('is-side-open'); } }),
-        el('span', { class: 'view-head__ico', text: '📊' }),
-        el('strong', { text: 'Panel y proyecciones' })
+        el('span', { class: 'view-head__ico', text: esAdmin ? '📊' : '🏠' }),
+        el('strong', { text: esAdmin ? 'Panel y proyecciones' : 'Mi espacio' })
       ]));
-      AE.dashboard.render(body, ctx);
+      if (esAdmin) AE.dashboard.render(body, ctx);
+      else AE.espacio.render(body, ctx);
       return;
     }
     document.body.classList.remove('is-dash');

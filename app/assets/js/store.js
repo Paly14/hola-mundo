@@ -68,7 +68,13 @@
   function migrate() {
     if (!state.tables) state.tables = [];
     if (!state.views) state.views = [];
-    state.settings = Object.assign(U.deepClone(AE.schema.settings), state.settings || {});
+    var guardados = state.settings || {};
+    state.settings = Object.assign(U.deepClone(AE.schema.settings), guardados);
+    /* Si los permisos por defecto cambiaron, se adoptan los nuevos */
+    if (guardados.permisosVersion !== AE.schema.settings.permisosVersion) {
+      state.settings.permisos = U.deepClone(AE.schema.PERMISOS);
+      state.settings.permisosVersion = AE.schema.settings.permisosVersion;
+    }
     AE.schema.tables.forEach(function (def) {
       var t = state.tables.filter(function (x) { return x.id === def.id; })[0];
       if (!t) { t = U.deepClone(def); t.records = []; state.tables.push(t); return; }
@@ -224,13 +230,17 @@
     }
     if (a.fecha_fin) a.dias_restantes = U.daysBetween(new Date(), a.fecha_fin);
 
-    var tabla = table('pagos');
-    var pagos = tabla ? tabla.records.filter(function (p) { return p.alumno === alumnoId; }) : [];
+    var pagos = pagosDeAlumno(alumnoId);
     if (pagos.length) {
       a.total_pagado = pagos.reduce(function (acc, p) {
         var monto = U.toNumber(p.monto) || 0;
         return acc + (p.tipo === 'Reembolso' ? -Math.abs(monto) : monto);
       }, 0);
+      var cuotas = pagos.filter(function (p) { return p.tipo === 'Cuota'; });
+      a.cuotas_pagadas = cuotas.length || null;
+      a.pagado_en_cuotas = cuotas.reduce(function (acc, p) {
+        return acc + (U.toNumber(p.monto) || 0);
+      }, 0) || null;
     }
     a.saldo = (U.toNumber(a.precio_total) || 0) - (U.toNumber(a.total_pagado) || 0);
 
@@ -250,6 +260,13 @@
     var t = table('alumnos');
     if (!t) return null;
     return t.records.filter(function (a) { return a.lead === leadId; })[0] || null;
+  }
+
+  function pagosDeAlumno(alumnoId) {
+    var t = table('pagos');
+    if (!t || !alumnoId) return [];
+    return t.records.filter(function (p) { return p.alumno === alumnoId; })
+      .sort(function (a, b) { return (U.parseDate(b.fecha) || 0) - (U.parseDate(a.fecha) || 0); });
   }
 
   function pagosDe(leadId) {
@@ -657,7 +674,7 @@
     addTable: addTable, deleteTable: deleteTable,
     addView: addView, updateView: updateView, deleteView: deleteView,
     rowsOf: rowsOf, allRows: allRows, groupRows: groupRows, titleOf: titleOf,
-    visibleFields: visibleFields, pagosDe: pagosDe, cobrado: cobrado,
+    visibleFields: visibleFields, pagosDe: pagosDe, pagosDeAlumno: pagosDeAlumno, cobrado: cobrado,
     recalcularCobro: recalcularCobro, recalcularAlumno: recalcularAlumno,
     refrescarAlumnos: refrescarAlumnos, alumnoDe: alumnoDe, resetReales: resetReales,
     opsFor: opsFor, OP_LABELS: OP_LABELS, RANGOS: RANGOS,

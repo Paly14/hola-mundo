@@ -55,7 +55,7 @@
       propios: true, admin: false
     },
     'Closer': {
-      tablas: ['leads', 'actividades', 'alumnos', 'tareas', 'recursos'],
+      tablas: ['leads', 'actividades', 'alumnos', 'programas', 'tareas', 'recursos'],
       /* El closer ve quién es alumno, pero la plata queda para Dueño y Admin */
       ocultos: {
         leads: ['cash_collected'],
@@ -194,9 +194,22 @@
         field('concepto', 'Concepto', 'text', { width: 210 }),
         field('alumno', 'Alumno', 'link', { width: 180, linkTable: 'alumnos' }),
         field('lead', 'Lead', 'link', { width: 170, linkTable: 'leads' }),
-        field('fecha', 'Fecha de cobro', 'date', { width: 140 }),
+        field('fecha', 'Fecha del pago', 'date', { width: 140 }),
+        field('naturaleza', 'Naturaleza del ingreso', 'select', {
+          width: 175,
+          options: [
+            { name: 'Reserva', color: '#f2c14e' }, { name: 'Nuevo cierre', color: '#3ec9a7' },
+            { name: 'Cuota', color: '#5b9dff' }, { name: 'Downsell', color: '#c084fc' },
+            { name: 'Upsell', color: '#ff9248' }, { name: 'Renovación', color: '#38bdf8' },
+            { name: 'Reembolso', color: '#fb7185' }
+          ]
+        }),
+        field('programa', 'Programa', 'select', {
+          width: 170, options: [],
+          optionsFrom: { table: 'programas', field: 'nombre' }
+        }),
         field('cuota', 'Cuota N°', 'number', { width: 100 }),
-        field('monto', 'Monto', 'currency', { width: 130 }),
+        field('monto', 'Cash collected USD', 'currency', { width: 165 }),
         field('tipo', 'Tipo', 'select', {
           width: 140,
           options: [
@@ -204,19 +217,62 @@
             { name: 'Pago total', color: '#ff9248' }, { name: 'Reembolso', color: '#fb7185' }
           ]
         }),
-        field('metodo', 'Método', 'select', {
-          width: 150,
+        field('monto_1', 'Cobrado método 1', 'currency', { width: 155 }),
+        field('metodo', 'Método de pago 1', 'select', {
+          width: 155,
           options: [
             { name: 'Transferencia' }, { name: 'Mercado Pago' }, { name: 'Stripe' },
-            { name: 'PayPal' }, { name: 'Efectivo' }, { name: 'Cripto' }
+            { name: 'PayPal' }, { name: 'Efectivo' }, { name: 'Cripto' },
+            { name: 'Binance' }, { name: 'Wise' }, { name: 'Otro' }
+          ]
+        }),
+        field('monto_2', 'Cobrado método 2', 'currency', { width: 155 }),
+        field('metodo_2', 'Método de pago 2', 'select', {
+          width: 155,
+          options: [
+            { name: 'Transferencia' }, { name: 'Mercado Pago' }, { name: 'Stripe' },
+            { name: 'PayPal' }, { name: 'Efectivo' }, { name: 'Cripto' },
+            { name: 'Binance' }, { name: 'Wise' }, { name: 'Otro' }
+          ]
+        }),
+        field('monto_3', 'Cobrado método 3', 'currency', { width: 155 }),
+        field('metodo_3', 'Método de pago 3', 'select', {
+          width: 155,
+          options: [
+            { name: 'Transferencia' }, { name: 'Mercado Pago' }, { name: 'Stripe' },
+            { name: 'PayPal' }, { name: 'Efectivo' }, { name: 'Cripto' },
+            { name: 'Binance' }, { name: 'Wise' }, { name: 'Otro' }
           ]
         }),
         field('closer', 'Closer', 'select', {
           width: 130, options: [],
           optionsFrom: { table: 'equipo', field: 'nombre', where: { rol: 'Closer' } }
         }),
-        field('factura', 'Factura / comprobante', 'url', { width: 180 }),
-        field('notas', 'Notas', 'longtext', { width: 240 })
+        field('setter', 'Setter', 'select', {
+          width: 130, options: [],
+          optionsFrom: { table: 'equipo', field: 'nombre', where: { rol: 'Setter' } }
+        }),
+        field('factura', 'Comprobante', 'url', { width: 180 }),
+        field('notas', 'Detalles y compromiso de pago', 'longtext', { width: 280 })
+      ]
+    },
+    {
+      id: 'programas', name: 'Programas', icon: '📦', primary: 'nombre',
+      fields: [
+        field('nombre', 'Programa', 'text', { width: 200 }),
+        field('tipo', 'Tipo', 'select', {
+          width: 150,
+          options: [
+            { name: 'Programa principal', color: '#ff9248' },
+            { name: 'Downsell', color: '#5b9dff' },
+            { name: 'Upsell', color: '#c084fc' },
+            { name: 'Renovación', color: '#3ec9a7' }
+          ]
+        }),
+        field('precio_lista', 'Precio de lista', 'currency', { width: 150 }),
+        field('duracion_dias', 'Duración (días)', 'number', { width: 140 }),
+        field('que_incluye', 'Qué incluye', 'longtext', { width: 320 }),
+        field('activo', 'Activo', 'checkbox', { width: 90 })
       ]
     },
     {
@@ -226,11 +282,8 @@
         field('email', 'Email', 'email', { width: 200 }),
         field('telefono', 'Teléfono', 'phone', { width: 150 }),
         field('programa', 'Programa', 'select', {
-          width: 170,
-          options: [
-            { name: 'Programa Completo', color: '#ff9248' }, { name: 'Mentoría 1:1', color: '#c084fc' },
-            { name: 'Acompañamiento', color: '#5b9dff' }, { name: 'Downsell', color: '#94a3b8' }
-          ]
+          width: 170, options: [],
+          optionsFrom: { table: 'programas', field: 'nombre' }
         }),
         field('estado', 'Estado', 'select', {
           width: 130,
@@ -251,7 +304,13 @@
         field('precio_total', 'Precio total', 'currency', { width: 140 }),
         field('total_pagado', 'Total pagado', 'currency', { width: 140, calculado: true }),
         field('saldo', 'Saldo pendiente', 'currency', { width: 150, calculado: true }),
+        field('cantidad_cuotas', 'Cantidad de cuotas', 'number', { width: 155 }),
+        field('monto_cuota', 'Monto por cuota', 'currency', { width: 150 }),
+        field('pagado_en_cuotas', 'Pagado en cuotas', 'currency', { width: 155, calculado: true }),
+        field('cuotas_pagadas', 'Cuotas pagadas', 'number', { width: 145, calculado: true }),
         field('proxima_cuota', 'Próxima cuota', 'date', { width: 145 }),
+        field('downsell_monto', 'Monto del downsell', 'currency', { width: 165 }),
+        field('downsell_entregado', 'Qué se le entregó del downsell', 'longtext', { width: 260 }),
         field('lead', 'Lead de origen', 'link', { width: 180, linkTable: 'leads' }),
         field('comprobantes', 'Comprobantes', 'url', { width: 160 }),
         field('resultados', 'Resultados / avances', 'longtext', { width: 260 }),
@@ -408,6 +467,10 @@
       filters: [], sorts: [{ fieldId: 'fecha', dir: 'desc' }], groupBy: 'lead', hidden: ['notas', 'closer']
     },
     {
+      id: 'v_programas', tableId: 'programas', name: 'Catálogo', type: 'grid',
+      filters: [], sorts: [{ fieldId: 'precio_lista', dir: 'desc' }], hidden: []
+    },
+    {
       id: 'v_alumnos', tableId: 'alumnos', name: 'Alumnos activos', type: 'grid',
       filters: [{ fieldId: 'estado', op: 'isAnyOf', value: ['Activo', 'Por vencer'] }],
       sorts: [{ fieldId: 'dias_restantes', dir: 'asc' }],
@@ -469,6 +532,9 @@
       brand: 'Alpha Ecommerce',
       currency: 'USD',
       permisos: PERMISOS,
+      /* Se sube cuando cambian los permisos por defecto, para que las bases
+         ya guardadas se actualicen en vez de quedarse con los viejos. */
+      permisosVersion: 2,
       /* Objetivo de tasa de agenda del setter (agendas / conversaciones) */
       objetivos: { tasaAgendaMin: 0.08, tasaAgendaMax: 0.12 },
       cloud: { url: '', key: '', enabled: false }

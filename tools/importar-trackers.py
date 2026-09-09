@@ -285,6 +285,9 @@ def leer_alumnos(path, alumnos, pagos):
             'modalidad': texto(v('modalidad de pago')),
             'precio_total': precio, 'total_pagado': pagado, 'saldo': precio - pagado,
             'proxima_cuota': iso(v('proxima cuota')),
+            'cantidad_cuotas': None, 'monto_cuota': None,
+            'pagado_en_cuotas': None, 'cuotas_pagadas': None,
+            'downsell_monto': None, 'downsell_entregado': '',
             'lead': '', 'comprobantes': texto(v('comprobantes de pago')),
             'resultados': texto(v('resultados')),
             'caso_exito': sinacentos(v('¿caso de exito?')) in ('si', 'sí', 'true', 'x')
@@ -343,6 +346,52 @@ def main():
         'clave': sha256(sinacentos(n).split()[0]), 'claveInicial': True
     } for n, r, e, m, c in equipo]
 
+    # --- Catálogo de programas ---
+    programas = [
+        ('Programa Completo', 'Programa principal', 997, 90,
+         'Programa completo de Alpha Ecommerce: formación, acompañamiento y comunidad.'),
+        ('Downsell', 'Downsell', 300, 90,
+         'Versión reducida del programa. Dejá acá qué se entrega exactamente.'),
+        ('Mentoría 1:1', 'Programa principal', None, 90, ''),
+        ('Acompañamiento', 'Programa principal', None, 90, ''),
+    ]
+    programas = [{
+        'id': 'rec_prog_' + re.sub(r'[^a-z0-9]+', '', sinacentos(n))[:16],
+        'nombre': n, 'tipo': t, 'precio_lista': p, 'duracion_dias': d,
+        'que_incluye': q, 'activo': True
+    } for n, t, p, d, q in programas]
+
+    # --- Corrección informada por el equipo: Facundo Miño pagó el downsell ---
+    for a in alumnos:
+        if sinacentos(a['nombre']) != 'facundo mino':
+            continue
+        if a['total_pagado']:
+            break
+        pagado = a['precio_total'] or 300
+        a['total_pagado'] = pagado
+        a['saldo'] = (a['precio_total'] or pagado) - pagado
+        a['modalidad'] = a['modalidad'] or 'Pago completo'
+        a['downsell_monto'] = pagado
+        pagos.append({
+            'id': 'rec_pago_facundomino', 'concepto': 'Downsell — ' + a['nombre'],
+            'alumno': a['id'], 'lead': a['lead'], 'fecha': a['fecha_ingreso'],
+            'cuota': None, 'monto': pagado, 'tipo': 'Pago total',
+            'naturaleza': 'Downsell', 'programa': a['programa'],
+            'metodo': '', 'closer': 'Gabo', 'setter': '', 'factura': '',
+            'notas': 'Pago del downsell confirmado por el equipo.'
+        })
+        break
+
+    # Naturaleza y programa en los cobros migrados
+    por_alumno = {a['id']: a for a in alumnos}
+    for pago in pagos:
+        alu = por_alumno.get(pago['alumno'])
+        pago.setdefault('programa', alu['programa'] if alu else '')
+        pago.setdefault('naturaleza',
+                        'Downsell' if alu and sinacentos(alu['programa']) == 'downsell'
+                        else 'Cuota' if pago['tipo'] == 'Cuota' else 'Nuevo cierre')
+        pago.setdefault('setter', '')
+
     # --- Tareas de arranque: salen de lo que los trackers dejan pendiente ---
     tareas = []
 
@@ -367,10 +416,34 @@ def main():
             pagado_por_lead[p['lead']] = pagado_por_lead.get(p['lead'], 0) + p['monto']
     for l in leads:
         cobrado_crm = l.get('cash_collected') or 0
-        if cobrado_crm and cobrado_crm > pagado_por_lead.get(l['id'], 0):
+        if cobrado_crm and cobrado_crm > pagado_por_lead.get(l['id'], 0) + 0.5:
             tarea('Conciliar el pago de %s (%s USD)' % (l['nombre'], cobrado_crm),
                   ['Admin', 'Gabo'], 'Alta', 'Administración',
                   'Figura cobrado en el CRM del closer pero no aparece en Gestión de Alumnos.')
+
+    # Downsells sin detalle de qué se entregó
+    for a in alumnos:
+        if sinacentos(a['programa']) == 'downsell' and not a.get('downsell_entregado'):
+            tarea('Anotar qué se le entregó del downsell a %s' % a['nombre'],
+                  ['Mariano', 'Gabo'], 'Media', 'Operaciones',
+                  'Campo "Qué se le entregó del downsell" en la ficha del alumno.')
+
+    # Precios que no coinciden con el catálogo
+    precios = {sinacentos(p['nombre']): p['precio_lista'] for p in programas}
+    for a in alumnos:
+        lista = precios.get(sinacentos(a['programa']))
+        if lista and a['precio_total'] and abs(a['precio_total'] - lista) > 0.5:
+            tarea('Revisar el precio de %s: %s USD contra %s de lista' %
+                  (a['nombre'], a['precio_total'], lista),
+                  ['Admin'], 'Media', 'Administración',
+                  'Puede ser un plan de cuotas con recargo o un precio acordado distinto.')
+
+    # Planes de cuota sin detalle
+    for a in alumnos:
+        if sinacentos(a.get('modalidad') or '').startswith('plan') and not a.get('cantidad_cuotas'):
+            tarea('Cargar el plan de cuotas de %s' % a['nombre'],
+                  ['Admin'], 'Media', 'Administración',
+                  'Falta cantidad de cuotas, monto por cuota y fecha de la próxima.')
 
     faltan_datos = [a['nombre'] for a in alumnos if not a['email'] or not a['telefono']]
     if faltan_datos:
@@ -408,7 +481,8 @@ def main():
         })
 
     datos = {
-        'equipo': equipo, 'leads': leads, 'alumnos': alumnos, 'pagos': pagos,
+        'equipo': equipo, 'programas': programas, 'leads': leads,
+        'alumnos': alumnos, 'pagos': pagos,
         'setter_dia': dias, 'actividades': [], 'contenido': [], 'tareas': tareas,
         'recursos': recursos, 'metas': metas
     }
