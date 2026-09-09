@@ -32,8 +32,8 @@ cerrar sesión).
 Al pie de la barra lateral aparece la **versión publicada**: sirve para saber si el
 navegador está viendo lo último o una copia vieja en caché.
 
-**Comisiones**: el closer se lleva el 10% y el setter el 5% del cash efectivamente
-cobrado. El porcentaje se cambia por persona en la tabla *Equipo* (campo Comisión);
+**Comisiones**: el closer se lleva el 10% y el setter el 5% del **neto**: lo cobrado
+menos lo que se queda la plataforma de pago. El porcentaje se cambia por persona en la tabla *Equipo* (campo Comisión);
 si está vacío se usa el 10% / 5% por defecto. Cada uno ve sólo las suyas, al pie de
 su espacio de trabajo, agrupadas por mes y separadas entre nuevos cierres y cuotas.
 
@@ -47,8 +47,8 @@ lo que factura el negocio.
 
 **Comisión de la plataforma**: al cargar un ingreso se anota cuánto se queda Stripe,
 PayPal o Mercado Pago. El formulario muestra el neto en vivo y el panel separa
-*cobrado bruto*, *lo que se llevó la plataforma* y *neto que entró*. Las comisiones
-del equipo se calculan sobre el bruto cobrado.
+*cobrado bruto*, *lo que se llevó la plataforma* y *neto que entró*. **Las comisiones
+del equipo salen del neto**: lo que se lleva la plataforma no comisiona para nadie.
 
 > Esto separa los espacios de trabajo y esconde la facturación, pero no es una
 > caja fuerte: los datos viajan al navegador de cada uno. Para un control real

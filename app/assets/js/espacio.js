@@ -94,8 +94,8 @@
     var titulo = espiando() ? 'Espacio de ' + yo() : 'Hola, ' + yo();
     var bajada = cobraComision()
       ? (espiando() ? 'Como lo ve ' + yo() + ' · ' + miRol() : 'Tu espacio de trabajo como ' + miRol().toLowerCase()) +
-        ' · comisión del ' + U.num(miComision()) + '% ' +
-        (comisionaTodo() ? 'sobre todas las ventas' : 'sobre tus cierres')
+        ' · comisión del ' + U.num(miComision()) + '% del neto ' +
+        (comisionaTodo() ? 'de todas las ventas' : 'de tus cierres')
       : 'Tus tareas, tus leads y el acceso a los espacios del equipo';
 
     return el('div', { class: 'dash-head' }, [
@@ -188,7 +188,7 @@
         { label: 'Shows', value: d.shows, hint: d.showRate + '% show rate' },
         { label: 'Cierres', value: d.cierres, hint: d.closeRate + '% close rate' },
         { label: 'Tu comisión', value: U.money(com.totalPeriodo, S.settings().currency),
-          hint: U.num(miComision()) + '% de ' + U.moneyShort(com.cashPeriodo, S.settings().currency), strong: true }
+          hint: U.num(miComision()) + '% de ' + U.moneyShort(com.netoPeriodo, S.settings().currency) + ' netos', strong: true }
       ];
     } else {
       items = [
@@ -196,9 +196,10 @@
         { label: 'Shows', value: d.shows, hint: d.showRate + '% show rate' },
         { label: 'Cierres', value: d.cierres, hint: d.closeRate + '% close rate' },
         { label: 'En seguimiento', value: d.registros.abiertos.length, hint: 'para cerrar' },
-        { label: 'Cash generado', value: U.money(com.cashPeriodo, S.settings().currency), hint: 'de tus cierres' },
+        { label: 'Cash generado', value: U.money(com.cashPeriodo, S.settings().currency),
+          hint: com.plataformaPeriodo ? U.moneyShort(com.netoPeriodo, S.settings().currency) + ' netos' : 'de tus cierres' },
         { label: 'Tu comisión', value: U.money(com.totalPeriodo, S.settings().currency),
-          hint: U.num(miComision()) + '% del cash cobrado', strong: true }
+          hint: U.num(miComision()) + '% de ' + U.moneyShort(com.netoPeriodo, S.settings().currency) + ' netos', strong: true }
       ];
     }
 
@@ -540,12 +541,28 @@
     var todos = misPagos();
     var tasa = miComision() / 100;
 
+    /* La comisión se calcula sobre lo que entra de verdad: el cobro menos
+       lo que se queda la plataforma de pago. */
     function armar(lista) {
-      var cash = lista.reduce(function (a, p) {
+      var bruto = 0, plataforma = 0;
+      lista.forEach(function (p) {
         var monto = U.toNumber(p.monto) || 0;
-        return a + (p.tipo === 'Reembolso' ? -Math.abs(monto) : monto);
-      }, 0);
-      return { cash: cash, comision: cash * tasa, cantidad: lista.length };
+        var costo = U.toNumber(p.comision_plataforma) || 0;
+        if (p.tipo === 'Reembolso') { bruto -= Math.abs(monto); plataforma -= Math.abs(costo); }
+        else { bruto += monto; plataforma += costo; }
+      });
+      var neto = bruto - plataforma;
+      return {
+        bruto: bruto, plataforma: plataforma, neto: neto,
+        cash: bruto, comision: neto * tasa, cantidad: lista.length
+      };
+    }
+
+    /* Lo que entró por un cobro, ya descontada la plataforma */
+    function netoDe(p) {
+      var monto = U.toNumber(p.monto) || 0;
+      var costo = U.toNumber(p.comision_plataforma) || 0;
+      return (p.tipo === 'Reembolso' ? -Math.abs(monto - costo) : monto - costo);
     }
 
     var delPeriodo = todos.filter(function (p) { return M.enPeriodo(p.fecha, periodo); });
@@ -560,11 +577,14 @@
       meses[mes].push(p);
     });
 
+    var resumen = armar(delPeriodo);
     return {
-      tasa: tasa,
+      tasa: tasa, netoDe: netoDe,
       pagos: delPeriodo,
-      cashPeriodo: armar(delPeriodo).cash,
-      totalPeriodo: armar(delPeriodo).comision,
+      cashPeriodo: resumen.bruto,
+      plataformaPeriodo: resumen.plataforma,
+      netoPeriodo: resumen.neto,
+      totalPeriodo: resumen.comision,
       nuevos: armar(nuevos), cuotas: armar(cuotas),
       historico: armar(todos),
       porMes: Object.keys(meses).sort().reverse().map(function (m) {
@@ -584,20 +604,24 @@
       .filter(function (l) { return M.enPeriodo(l.fecha_llamada || l.fecha_contacto, periodo); })
       .map(function (l) {
         var alumno = S.alumnoDe(l.id);
-        var cobrado = misPagos()
+        var cobrado = 0, plataforma = 0;
+        misPagos()
           .filter(function (p) { var lead = leadDelPago(p); return lead && lead.id === l.id; })
-          .reduce(function (a, p) {
+          .forEach(function (p) {
             var monto = U.toNumber(p.monto) || 0;
-            return a + (p.tipo === 'Reembolso' ? -Math.abs(monto) : monto);
-          }, 0);
+            var costo = U.toNumber(p.comision_plataforma) || 0;
+            if (p.tipo === 'Reembolso') { cobrado -= Math.abs(monto); plataforma -= Math.abs(costo); }
+            else { cobrado += monto; plataforma += costo; }
+          });
+        var neto = cobrado - plataforma;
         return {
           lead: l,
           fecha: l.fecha_llamada || l.fecha_contacto,
           conQuien: l[otro] || '—',
           programa: (alumno && alumno.programa) || l.oferta || '—',
           precio: (alumno && U.toNumber(alumno.precio_total)) || U.toNumber(l.precio) || 0,
-          cobrado: cobrado,
-          comision: cobrado * tasa
+          cobrado: cobrado, plataforma: plataforma, neto: neto,
+          comision: neto * tasa
         };
       })
       .sort(function (a, b) { return (U.parseDate(b.fecha) || 0) - (U.parseDate(a.fecha) || 0); });
@@ -618,14 +642,15 @@
     }
 
     var totalCobrado = cierres.reduce(function (a, c) { return a + c.cobrado; }, 0);
+    var totalNeto = cierres.reduce(function (a, c) { return a + c.neto; }, 0);
     var totalComision = cierres.reduce(function (a, c) { return a + c.comision; }, 0);
     var pendiente = cierres.reduce(function (a, c) { return a + Math.max(0, c.precio - c.cobrado); }, 0);
 
     var tabla = el('table', { class: 'mini' }, [
       el('thead', {}, [el('tr', {}, [
         el('th', { text: 'Cliente' }), el('th', { text: 'Fecha' }), el('th', { text: otro }),
-        el('th', { text: 'Programa' }), el('th', { text: 'Valor' }),
-        el('th', { text: 'Cobrado' }), el('th', { text: 'Tu comisión' })
+        el('th', { text: 'Programa' }), el('th', { text: 'Cobrado' }),
+        el('th', { text: 'Neto' }), el('th', { text: 'Tu comisión' })
       ])])
     ]);
     var tb = el('tbody');
@@ -638,16 +663,17 @@
         el('td', { text: U.formatDate(c.fecha) }),
         el('td', { text: c.conQuien }),
         el('td', { text: c.programa }),
-        el('td', { text: c.precio ? U.money(c.precio, cur) : '—' }),
         el('td', { text: U.money(c.cobrado, cur) }),
+        el('td', { text: U.money(c.neto, cur) }),
         el('td', { class: 'pos', text: U.money(c.comision, cur) })
       ]));
     });
     tabla.appendChild(tb);
     tabla.appendChild(el('tfoot', {}, [el('tr', {}, [
       el('td', { text: cierres.length + ' cierres' }),
-      el('td', {}), el('td', {}), el('td', {}), el('td', {}),
+      el('td', {}), el('td', {}), el('td', {}),
       el('td', { text: U.money(totalCobrado, cur) }),
+      el('td', { text: U.money(totalNeto, cur) }),
       el('td', { class: 'pos', text: U.money(totalComision, cur) })
     ])]));
 
@@ -666,9 +692,13 @@
     var com = misComisiones();
 
     var resumen = el('div', { class: 'proj-grid' }, [
-      item('Comisión del periodo', U.money(com.totalPeriodo, cur), com.pagos.length + ' cobros'),
-      item('Nuevos cierres', U.money(com.nuevos.comision, cur), U.moneyShort(com.nuevos.cash, cur) + ' cobrados'),
-      item('Cuotas', U.money(com.cuotas.comision, cur), U.moneyShort(com.cuotas.cash, cur) + ' cobrados'),
+      item('Cobrado (bruto)', U.money(com.cashPeriodo, cur), com.pagos.length + ' cobros'),
+      item('Se llevó la plataforma', U.money(com.plataformaPeriodo, cur),
+        com.plataformaPeriodo ? 'no comisiona' : 'sin costos'),
+      item('Base de tu comisión', U.money(com.netoPeriodo, cur), 'lo que entró de verdad'),
+      item('Comisión del periodo', U.money(com.totalPeriodo, cur), U.num(miComision()) + '% del neto'),
+      item('Nuevos cierres', U.money(com.nuevos.comision, cur), U.moneyShort(com.nuevos.neto, cur) + ' netos'),
+      item('Cuotas', U.money(com.cuotas.comision, cur), U.moneyShort(com.cuotas.neto, cur) + ' netos'),
       item('Comisión histórica', U.money(com.historico.comision, cur), 'desde el inicio')
     ]);
 
@@ -685,8 +715,9 @@
       var tabla = el('table', { class: 'mini' }, [
         el('thead', {}, [el('tr', {}, [
           el('th', { text: 'Cliente' }), el('th', { text: 'Fecha' }),
-          el('th', { text: 'Cash collected' }), el('th', { text: 'Tu comisión' }),
-          el('th', { text: 'Programa' }), el('th', { text: 'Naturaleza' })
+          el('th', { text: 'Cobrado' }), el('th', { text: 'Plataforma' }),
+          el('th', { text: 'Neto' }), el('th', { text: 'Tu comisión' }),
+          el('th', { text: 'Naturaleza' })
         ])])
       ]);
       var tb = el('tbody');
@@ -694,12 +725,15 @@
         return (U.parseDate(b.fecha) || 0) - (U.parseDate(a.fecha) || 0);
       }).forEach(function (p) {
         var monto = U.toNumber(p.monto) || 0;
+        var costo = U.toNumber(p.comision_plataforma) || 0;
+        var neto = com.netoDe(p);
         tb.appendChild(el('tr', {}, [
           el('td', { text: S.titleOf('leads', p.lead) || S.titleOf('alumnos', p.alumno) || p.concepto }),
           el('td', { text: U.formatDate(p.fecha) }),
           el('td', { text: U.money(monto, cur) }),
-          el('td', { class: 'pos', text: U.money(monto * com.tasa, cur) }),
-          el('td', { text: p.programa || '—' }),
+          el('td', { class: costo ? 'neg' : '', text: costo ? '−' + U.money(costo, cur) : '—' }),
+          el('td', { text: U.money(neto, cur) }),
+          el('td', { class: 'pos', text: U.money(neto * com.tasa, cur) }),
           el('td', { html: p.naturaleza ? F.chip(p.naturaleza, U.colorFor(p.naturaleza)) : '' })
         ]));
       });
@@ -709,7 +743,8 @@
         el('div', { class: 'com-mes__head' }, [
           el('strong', { text: U.monthLabel(grupo.mes) }),
           el('span', { class: 'muted small', text: grupo.pagos.length + ' cobros · ' +
-            U.money(grupo.resumen.cash, cur) + ' cobrados' }),
+            U.money(grupo.resumen.bruto, cur) + ' cobrados · ' +
+            U.money(grupo.resumen.neto, cur) + ' netos' }),
           el('span', { class: 'com-mes__total', text: U.money(grupo.resumen.comision, cur) })
         ]),
         tabla
@@ -718,11 +753,12 @@
 
     return el('section', { class: 'panel panel--wide' }, [
       el('h3', { class: 'panel__title', text: espiando() ? 'Comisiones de ' + yo() : 'Mis comisiones' }),
-      el('p', { class: 'muted small', text: comisionaTodo()
-        ? 'Se calculan sobre el cash efectivamente cobrado por el negocio, al ' + U.num(miComision()) + '%.'
-        : 'Se calculan sobre el cash efectivamente cobrado, al ' + U.num(miComision()) + '%. ' +
-          'Cuenta lo que lleva tu nombre en el cobro y, si el cobro no dice quién fue, lo que ' +
-          'pagaron tus leads. Si algo no coincide, avisale a administración.' }),
+      el('p', { class: 'muted small', text: 'Se calculan al ' + U.num(miComision()) + '% del neto: ' +
+        'lo cobrado menos lo que se queda la plataforma de pago. ' +
+        (comisionaTodo()
+          ? 'Toma todas las ventas del negocio.'
+          : 'Cuenta lo que lleva tu nombre en el cobro y, si el cobro no dice quién fue, lo que ' +
+            'pagaron tus leads. Si algo no coincide, avisale a administración.') }),
       cuerpo
     ]);
   }
