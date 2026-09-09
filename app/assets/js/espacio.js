@@ -45,6 +45,13 @@
     return valor != null && valor > 0 ? valor : (COMISION[miRol()] || 0);
   }
 
+  /* Hay gente que comisiona sobre sus propios cierres y gente sobre todo lo
+     que factura el negocio (por ejemplo, quien dirige el área comercial). */
+  function comisionaTodo() { return miFicha().base_comision === 'Todas las ventas'; }
+
+  /* Muestra cierres y comisiones a quien tenga un porcentaje asignado */
+  function cobraComision() { return esVendedor(miRol()) || miComision() > 0; }
+
   /* ---------------- render ---------------- */
 
   function render(host, ctx) {
@@ -59,7 +66,7 @@
     host.appendChild(leadsPanel(ctx));
     if (rol === 'Closer') host.appendChild(llamadasPanel(ctx));
     host.appendChild(tareasPanel(ctx));
-    if (esVendedor(rol)) {
+    if (cobraComision()) {
       host.appendChild(cierresPanel(ctx));
       host.appendChild(comisionesPanel());
     }
@@ -85,9 +92,10 @@
       }));
     });
     var titulo = espiando() ? 'Espacio de ' + yo() : 'Hola, ' + yo();
-    var bajada = esVendedor(miRol())
+    var bajada = cobraComision()
       ? (espiando() ? 'Como lo ve ' + yo() + ' · ' + miRol() : 'Tu espacio de trabajo como ' + miRol().toLowerCase()) +
-        ' · comisión del ' + U.num(miComision()) + '%'
+        ' · comisión del ' + U.num(miComision()) + '% ' +
+        (comisionaTodo() ? 'sobre todas las ventas' : 'sobre tus cierres')
       : 'Tus tareas, tus leads y el acceso a los espacios del equipo';
 
     return el('div', { class: 'dash-head' }, [
@@ -514,9 +522,10 @@
    * el setter no vería nada de lo que cierran sus leads.
    */
   function misPagos() {
-    var campo = miRol() === 'Setter' ? 'setter' : 'closer';
     var tabla = S.table('pagos');
     if (!tabla) return [];
+    if (comisionaTodo()) return tabla.records.slice();
+    var campo = miRol() === 'Setter' ? 'setter' : 'closer';
     return tabla.records.filter(function (p) {
       if (p[campo]) return p[campo] === yo();
       var lead = leadDelPago(p);
@@ -571,7 +580,7 @@
     var tasa = miComision() / 100;
 
     return S.allRows('leads')
-      .filter(function (l) { return l[campo] === yo() && l.estado === 'Ganado'; })
+      .filter(function (l) { return l.estado === 'Ganado' && (comisionaTodo() || l[campo] === yo()); })
       .filter(function (l) { return M.enPeriodo(l.fecha_llamada || l.fecha_contacto, periodo); })
       .map(function (l) {
         var alumno = S.alumnoDe(l.id);
@@ -643,7 +652,8 @@
     ])]));
 
     return el('section', { class: 'panel panel--wide' }, [
-      el('h3', { class: 'panel__title', text: espiando() ? 'Cierres de ' + yo() : 'Mis cierres' }),
+      el('h3', { class: 'panel__title', text: comisionaTodo() ? 'Cierres del equipo'
+        : (espiando() ? 'Cierres de ' + yo() : 'Mis cierres') }),
       tabla,
       pendiente > 0 ? el('p', { class: 'muted small', text:
         'Quedan ' + U.money(pendiente, cur) + ' por cobrar de estos clientes. ' +
@@ -708,9 +718,11 @@
 
     return el('section', { class: 'panel panel--wide' }, [
       el('h3', { class: 'panel__title', text: espiando() ? 'Comisiones de ' + yo() : 'Mis comisiones' }),
-      el('p', { class: 'muted small', text: 'Se calculan sobre el cash efectivamente cobrado, al ' +
-        U.num(miComision()) + '%. Cuenta lo que lleva tu nombre en el cobro y, si el cobro no dice ' +
-        'quién fue, lo que pagaron tus leads. Si algo no coincide, avisale a administración.' }),
+      el('p', { class: 'muted small', text: comisionaTodo()
+        ? 'Se calculan sobre el cash efectivamente cobrado por el negocio, al ' + U.num(miComision()) + '%.'
+        : 'Se calculan sobre el cash efectivamente cobrado, al ' + U.num(miComision()) + '%. ' +
+          'Cuenta lo que lleva tu nombre en el cobro y, si el cobro no dice quién fue, lo que ' +
+          'pagaron tus leads. Si algo no coincide, avisale a administración.' }),
       cuerpo
     ]);
   }

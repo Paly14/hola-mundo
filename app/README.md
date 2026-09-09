@@ -18,8 +18,8 @@ pide cambiarla. Se cambian también desde *Equipo → abrir la ficha → Cambiar
 | Rol | Qué ve |
 |---|---|
 | **Dueño** (Mariano) y **Admin** | Todo: leads, alumnos, **facturación**, contenido, tareas, equipo, metas y permisos. |
-| **Setter** | Sus leads, su actividad diaria, sus tareas y los recursos. Nada de plata. |
-| **Closer** | Sus leads, quiénes son alumnos, sus tareas y los recursos. Nada de plata. |
+| **Setter** | Sus leads, su actividad diaria, sus tareas y los recursos. Ni facturación, ni alumnos, ni contenido, ni proyecciones. |
+| **Closer** | Sus leads, el catálogo de programas, sus tareas y los recursos. Puede cargar ingresos, pero no ve la caja. |
 | **Editor** | Contenido y guiones, sus tareas y los recursos. |
 
 Quién ve qué se ajusta desde *⚙︎ Datos y ajustes → Quién ve qué (permisos)*.
@@ -40,6 +40,15 @@ su espacio de trabajo, agrupadas por mes y separadas entre nuevos cierres y cuot
 Un cobro se le atribuye a quien figure en el campo Closer o Setter del cobro. Si el
 cobro no dice quién fue, se atribuye por el lead: así el setter cobra su parte de lo
 que pagan los leads que él trajo, aunque el cierre lo haya hecho otro.
+
+En la tabla *Equipo*, el campo **Comisiona sobre** define la base: *Sus cierres* (lo
+normal para setters y closers) o *Todas las ventas*, para quien comisiona sobre todo
+lo que factura el negocio.
+
+**Comisión de la plataforma**: al cargar un ingreso se anota cuánto se queda Stripe,
+PayPal o Mercado Pago. El formulario muestra el neto en vivo y el panel separa
+*cobrado bruto*, *lo que se llevó la plataforma* y *neto que entró*. Las comisiones
+del equipo se calculan sobre el bruto cobrado.
 
 > Esto separa los espacios de trabajo y esconde la facturación, pero no es una
 > caja fuerte: los datos viajan al navegador de cada uno. Para un control real

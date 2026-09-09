@@ -270,7 +270,10 @@
     var f = M.facturacion(periodo);
     var box = el('div', {});
     box.appendChild(el('div', { class: 'proj-grid' }, [
-      projItem('Cobrado', U.money(f.total, cur), f.cantidad + ' cobros'),
+      projItem('Cobrado (bruto)', U.money(f.total, cur), f.cantidad + ' cobros'),
+      projItem('Se llevó la plataforma', U.money(f.plataforma, cur),
+        f.total ? U.pct(f.plataforma, f.total, 1) + '% de lo cobrado' : ''),
+      projItem('Neto que entró', U.money(f.neto, cur), 'después de comisiones'),
       projItem('Cobro promedio', U.money(f.promedio, cur), 'por operación'),
       projItem('Reembolsos', U.money(f.reembolsos, cur), f.reembolsos ? 'revisar' : 'ninguno')
     ]));

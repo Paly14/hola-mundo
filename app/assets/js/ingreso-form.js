@@ -95,6 +95,8 @@
     var metodo2 = selector(metodos, '');
     var monto3 = el('input', { class: 'inp', type: 'number', min: '0', step: '0.01' });
     var metodo3 = selector(metodos, '');
+    var comisionPlataforma = el('input', { class: 'inp', type: 'number', min: '0', step: '0.01', placeholder: '0' });
+    var netoAviso = el('span', { class: 'form-hint' });
     var comprobante = el('input', { class: 'inp', type: 'url', placeholder: 'Link al comprobante (Drive, Dropbox…)' });
 
     /* ---------- Plan de pagos ---------- */
@@ -165,6 +167,9 @@
           AE.ui.formRow('Método de pago 2', metodo2),
           AE.ui.formRow('Cobrado método 3', monto3),
           AE.ui.formRow('Método de pago 3', metodo3),
+          AE.ui.formRow('Comisión de la plataforma (' + cur + ')',
+            el('div', {}, [comisionPlataforma, netoAviso]),
+            'Lo que se queda Stripe, PayPal, Mercado Pago… Dejalo en 0 si fue transferencia.'),
           AE.ui.formRow('Comprobante', comprobante)
         ]),
       secPlan,
@@ -219,7 +224,19 @@
     cashUSD.addEventListener('change', function () {
       if (!monto1.value) monto1.value = cashUSD.value;
       if (naturaleza.value === 'Downsell' && !downsellMonto.value) downsellMonto.value = cashUSD.value;
+      mostrarNeto();
     });
+
+    /* Se ve al toque cuánto entra de verdad después de la plataforma */
+    function mostrarNeto() {
+      var bruto = U.toNumber(cashUSD.value) || 0;
+      var costo = U.toNumber(comisionPlataforma.value) || 0;
+      if (!bruto && !costo) { netoAviso.textContent = ''; return; }
+      netoAviso.textContent = 'Neto que entra: ' + U.money(bruto - costo, cur) +
+        (costo ? '  (de ' + U.money(bruto, cur) + ')' : '');
+    }
+    comisionPlataforma.addEventListener('input', mostrarNeto);
+    cashUSD.addEventListener('input', mostrarNeto);
 
     var modal = AE.ui.modal({
       title: 'Cargar ingreso',
@@ -332,6 +349,7 @@
         monto_1: U.toNumber(monto1.value), metodo: metodo1.value,
         monto_2: U.toNumber(monto2.value), metodo_2: metodo2.value,
         monto_3: U.toNumber(monto3.value), metodo_3: metodo3.value,
+        comision_plataforma: U.toNumber(comisionPlataforma.value) || null,
         closer: closer.value,
         setter: setter.value === 'No aplica' ? '' : setter.value,
         factura: comprobante.value.trim(),

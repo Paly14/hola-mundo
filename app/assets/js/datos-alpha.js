@@ -14,6 +14,7 @@
       "email": "mariano@alphaecommerce.com",
       "meta_cash": 0,
       "comision": 0,
+      "base_comision": "Sus cierres",
       "activo": true,
       "clave": "62f385917c82d24eb2c96390033915e61c1705b25afc867378be34c4e5428e8e",
       "claveInicial": true
@@ -24,7 +25,8 @@
       "rol": "Admin",
       "email": "",
       "meta_cash": 0,
-      "comision": 0,
+      "comision": 30,
+      "base_comision": "Todas las ventas",
       "activo": true,
       "clave": "7ef2e89ea5519994c05edf1b28c38f84b2ea8cba278445349323a839f9d16d45",
       "claveInicial": true
@@ -36,6 +38,7 @@
       "email": "",
       "meta_cash": 0,
       "comision": 5,
+      "base_comision": "Sus cierres",
       "activo": true,
       "clave": "dcf2a74c9d9984923ddef7230a97d97191a9e20f02a903883006dde39e1a7383",
       "claveInicial": true
@@ -47,6 +50,7 @@
       "email": "",
       "meta_cash": 60000,
       "comision": 10,
+      "base_comision": "Sus cierres",
       "activo": true,
       "clave": "f73714d9306875e0729204bb966d54848bf85f3fbea54de685cc929a40ad1860",
       "claveInicial": true

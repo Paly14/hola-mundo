@@ -212,10 +212,11 @@
 
   function facturacion(periodo) {
     var pagos = S.allRows('pagos').filter(function (p) { return enPeriodo(p.fecha, periodo); });
-    var neto = 0, reembolsos = 0;
+    var neto = 0, reembolsos = 0, plataforma = 0;
     var porMetodo = {}, porTipo = {};
     pagos.forEach(function (p) {
       var monto = U.toNumber(p.monto) || 0;
+      plataforma += U.toNumber(p.comision_plataforma) || 0;
       if (p.tipo === 'Reembolso') { reembolsos += Math.abs(monto); neto -= Math.abs(monto); }
       else neto += monto;
       var m = p.metodo || 'Sin método';
@@ -225,6 +226,7 @@
     });
     return {
       total: neto, reembolsos: reembolsos, cantidad: pagos.length,
+      plataforma: plataforma, neto: neto - plataforma,
       promedio: pagos.length ? neto / pagos.length : 0,
       porMetodo: aLista(porMetodo), porTipo: aLista(porTipo), pagos: pagos
     };

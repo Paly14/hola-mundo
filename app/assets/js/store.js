@@ -190,6 +190,13 @@
 
   /* Reglas automáticas al guardar, para no tener que tocar dos campos */
   function aplicarReglas(tableId, rec, patch) {
+    if (tableId === 'pagos') {
+      /* Lo que realmente entró después de lo que se lleva la plataforma */
+      var bruto = U.toNumber('monto' in patch ? patch.monto : rec.monto) || 0;
+      var costo = U.toNumber('comision_plataforma' in patch ? patch.comision_plataforma : rec.comision_plataforma) || 0;
+      patch.neto = bruto - costo;
+      return;
+    }
     if (tableId === 'alumnos') {
       setTimeout(function () { recalcularAlumno(rec.id); emit('alumno'); }, 0);
       return;

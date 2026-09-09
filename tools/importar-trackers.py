@@ -335,16 +335,16 @@ def main():
                     p['lead'] = lid
 
     equipo = [
-        ('Mariano', 'Dueño', 'mariano@alphaecommerce.com', 0, 0),
-        ('Hernán', 'Admin', '', 0, 0),
-        (config['setter'], 'Setter', '', 0, 5),
-        ('Gabo', 'Closer', '', 60000, 10),
+        ('Mariano', 'Dueño', 'mariano@alphaecommerce.com', 0, 0, 'Sus cierres'),
+        ('Hernán', 'Admin', '', 0, 30, 'Todas las ventas'),
+        (config['setter'], 'Setter', '', 0, 5, 'Sus cierres'),
+        ('Gabo', 'Closer', '', 60000, 10, 'Sus cierres'),
     ]
     equipo = [{
         'id': 'rec_eq_' + sinacentos(n).replace(' ', ''), 'nombre': n, 'rol': r,
-        'email': e, 'meta_cash': m, 'comision': c, 'activo': True,
+        'email': e, 'meta_cash': m, 'comision': c, 'base_comision': base, 'activo': True,
         'clave': sha256(sinacentos(n).split()[0]), 'claveInicial': True
-    } for n, r, e, m, c in equipo]
+    } for n, r, e, m, c, base in equipo]
 
     # --- Catálogo de programas ---
     programas = [

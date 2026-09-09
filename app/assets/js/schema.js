@@ -55,13 +55,11 @@
       propios: true, admin: false
     },
     'Closer': {
-      tablas: ['leads', 'actividades', 'alumnos', 'programas', 'tareas', 'recursos'],
-      /* El closer ve quién es alumno, pero la plata queda para Dueño y Admin */
-      ocultos: {
-        leads: ['cash_collected'],
-        alumnos: ['precio_total', 'total_pagado', 'saldo', 'proxima_cuota',
-          'modalidad', 'comprobantes']
-      },
+      /* Su espacio de trabajo: sus leads, lo que vende y sus tareas.
+         La gestión de alumnos, la facturación y las proyecciones son de
+         Dueño y Admin. */
+      tablas: ['leads', 'actividades', 'programas', 'tareas', 'recursos'],
+      ocultos: { leads: ['cash_collected'] },
       propios: true, admin: false
     },
     'Editor': {
@@ -185,6 +183,13 @@
         field('email', 'Email', 'email', { width: 210 }),
         field('meta_cash', 'Meta cash / mes', 'currency', { width: 150 }),
         field('comision', 'Comisión', 'percent', { width: 120 }),
+        field('base_comision', 'Comisiona sobre', 'select', {
+          width: 165,
+          options: [
+            { name: 'Sus cierres', color: '#5b9dff' },
+            { name: 'Todas las ventas', color: '#ff9248' }
+          ]
+        }),
         field('activo', 'Activo', 'checkbox', { width: 100 })
       ]
     },
@@ -244,6 +249,8 @@
             { name: 'Binance' }, { name: 'Wise' }, { name: 'Otro' }
           ]
         }),
+        field('comision_plataforma', 'Comisión de la plataforma', 'currency', { width: 185 }),
+        field('neto', 'Neto que entró', 'currency', { width: 150, calculado: true }),
         field('closer', 'Closer', 'select', {
           width: 130, options: [],
           optionsFrom: { table: 'equipo', field: 'nombre', where: { rol: 'Closer' } }
@@ -523,7 +530,7 @@
 
   /* Se sube en cada publicación: sirve para saber de un vistazo si el
      navegador está viendo la última versión o una copia vieja en caché. */
-  var VERSION = '2026-09-09 · 3';
+  var VERSION = '2026-09-09 · 4';
 
   AE.schema = {
     VERSION: VERSION,
@@ -539,7 +546,7 @@
       permisos: PERMISOS,
       /* Se sube cuando cambian los permisos por defecto, para que las bases
          ya guardadas se actualicen en vez de quedarse con los viejos. */
-      permisosVersion: 2,
+      permisosVersion: 3,
       /* Objetivo de tasa de agenda del setter (agendas / conversaciones) */
       objetivos: { tasaAgendaMin: 0.08, tasaAgendaMax: 0.12 },
       cloud: { url: '', key: '', enabled: false }
