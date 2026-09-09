@@ -124,10 +124,17 @@ create policy "equipo" on crm_state
 ```
 
 3. En **Settings → API** copiá el **Project URL** y la clave **anon public**.
-4. En la app: barra lateral → **☁︎ Conectar la nube** → pegá los dos datos → *Guardar y probar*.
+4. En la app: barra lateral → **☁︎ Conectar la nube** → pegá los dos datos →
+   *Probar conexión*. Si algo falla, el mensaje dice exactamente qué corregir
+   (URL mal escrita, clave equivocada, tabla que falta, política sin crear).
+5. Cuando diga "Listo", aparece un **link para el resto del equipo**: copialo y
+   mandáselo a cada uno. Al abrirlo quedan conectados a la misma base sin tener
+   que copiar la URL ni la clave.
 
 Desde ahí la app sincroniza sola cada 45 segundos, al volver a la pestaña y
-después de cada cambio. Si dos personas editan a la vez, gana la versión más reciente.
+después de cada cambio. Si dos personas editan a la vez, gana la versión más
+reciente. La primera vez que un dispositivo se conecta, siempre baja la base del
+equipo (para que su copia local no pise la de todos).
 
 > La clave `anon public` permite leer y escribir esa tabla a cualquiera que tenga
 > el link de la app. Está bien para un equipo interno; no la publiques.

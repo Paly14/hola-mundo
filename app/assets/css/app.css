@@ -648,6 +648,13 @@ body.is-auth .main { display: none; }
 .com-mes__total { margin-left: auto; font-family: 'Sora'; font-weight: 700; color: var(--brand-dark); }
 .mini tfoot td { font-weight: 700; border-top: 1px solid var(--line); }
 
+.cloud-status { font-size: 13px; margin: 6px 0 10px; color: var(--muted); }
+.cloud-status:empty { display: none; }
+.cloud-status.is-ok { color: #14a37f; font-weight: 600; }
+.cloud-status.is-error { color: #e05260; font-weight: 600; }
+.cloud-link__row { display: flex; gap: 6px; }
+.cloud-link__row .inp { font-size: 12px; }
+
 /* ================= responsive ================= */
 
 @media (max-width: 860px) {

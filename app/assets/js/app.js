@@ -400,6 +400,20 @@
 
   function init() {
     S.load();
+
+    /* Si abrieron el link de invitación, primero traemos la base del equipo */
+    if (AE.cloud.aplicarInvitacion()) {
+      AE.ui.toast('Conectando con la base del equipo…');
+      AE.cloud.sync(true, true).then(function () {
+        AE.ui.toast('Listo, ya estás conectado a la base del equipo');
+        entrar();
+      });
+      return;
+    }
+    entrar();
+  }
+
+  function entrar() {
     if (AE.auth.revalidar()) arrancar();
     else AE.auth.pantalla(function () { arrancar(); });
   }
