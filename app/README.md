@@ -29,6 +29,10 @@ cobrado. El porcentaje se cambia por persona en la tabla *Equipo* (campo Comisi�
 si está vacío se usa el 10% / 5% por defecto. Cada uno ve sólo las suyas, al pie de
 su espacio de trabajo, agrupadas por mes y separadas entre nuevos cierres y cuotas.
 
+Un cobro se le atribuye a quien figure en el campo Closer o Setter del cobro. Si el
+cobro no dice quién fue, se atribuye por el lead: así el setter cobra su parte de lo
+que pagan los leads que él trajo, aunque el cierre lo haya hecho otro.
+
 > Esto separa los espacios de trabajo y esconde la facturación, pero no es una
 > caja fuerte: los datos viajan al navegador de cada uno. Para un control real
 > por usuario hay que pasar a Supabase con Auth + RLS (ver más abajo).
@@ -37,7 +41,7 @@ su espacio de trabajo, agrupadas por mes y separadas entre nuevos cierres y cuot
 
 | Sección | Para qué sirve |
 |---|---|
-| **Mi espacio** (setter y closer) | La portada de cada vendedor: accesos directos, sus leads con el seguimiento y notas, sus KPIs y, abajo de todo, **sus comisiones** mes a mes. |
+| **Mi espacio** (setter y closer) | La portada de cada vendedor: accesos directos, sus KPIs, su **tracker diario** (el setter carga el día ahí mismo) o sus llamadas (el closer), sus leads con el seguimiento y notas, **sus cierres** y, abajo de todo, **sus comisiones** mes a mes. |
 | **Cargar ingreso** | Un formulario guiado para cargar cada pago: datos del ingreso, hasta 3 métodos de pago, plan de cuotas y detalle del downsell. Crea el cobro, actualiza el lead y crea o actualiza la ficha del alumno en un solo paso. Lo usan el closer y administración. |
 | **Programas** | Catálogo con el precio de lista, la duración y qué incluye cada programa. Programa Completo: 997 USD. |
 | **Panel y proyecciones** | KPIs del mes, embudo, cash collected por mes vs. meta, alumnos y cobranzas, facturación por método, saldos por cobrar, ranking del equipo, actividad del setter y proyección de cierre de mes y de los próximos 3 meses. |

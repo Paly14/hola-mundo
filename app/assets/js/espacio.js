@@ -35,8 +35,11 @@
     host.appendChild(encabezado(ctx));
     host.appendChild(accesos(ctx));
     host.appendChild(metricas(rol));
+    /* El tracker diario es lo primero que toca un setter cada día */
+    if (rol === 'Setter') host.appendChild(kpisDiarios(ctx));
     host.appendChild(leadsPanel(ctx));
-    host.appendChild(rol === 'Setter' ? kpisDiarios(ctx) : llamadasPanel(ctx));
+    if (rol !== 'Setter') host.appendChild(llamadasPanel(ctx));
+    host.appendChild(cierresPanel(ctx));
     host.appendChild(comisionesPanel());
   }
 
@@ -381,14 +384,37 @@
 
   /* ---------------- comisiones ---------------- */
 
+  /* El lead detrás de un cobro, ya sea por vínculo directo o por el alumno */
+  function leadDelPago(pago) {
+    if (pago.lead) return S.record('leads', pago.lead);
+    if (pago.alumno) {
+      var alumno = S.record('alumnos', pago.alumno);
+      if (alumno && alumno.lead) return S.record('leads', alumno.lead);
+    }
+    return null;
+  }
+
   /**
-   * Las comisiones se calculan sobre el cash efectivamente cobrado
-   * en los pagos donde figura esta persona como closer o como setter.
+   * Cobros que le corresponden a esta persona: los que llevan su nombre y,
+   * cuando el cobro no dice quién fue, los de sus propios leads. Sin esto,
+   * el setter no vería nada de lo que cierran sus leads.
    */
-  function misComisiones() {
+  function misPagos() {
     var campo = miRol() === 'Setter' ? 'setter' : 'closer';
     var tabla = S.table('pagos');
-    var todos = tabla ? tabla.records.filter(function (p) { return p[campo] === yo(); }) : [];
+    if (!tabla) return [];
+    return tabla.records.filter(function (p) {
+      if (p[campo]) return p[campo] === yo();
+      var lead = leadDelPago(p);
+      return !!(lead && lead[campo] === yo());
+    });
+  }
+
+  /**
+   * Las comisiones se calculan sobre el cash efectivamente cobrado.
+   */
+  function misComisiones() {
+    var todos = misPagos();
     var tasa = miComision() / 100;
 
     function armar(lista) {
@@ -422,6 +448,91 @@
         return { mes: m, pagos: meses[m], resumen: armar(meses[m]) };
       })
     };
+  }
+
+  /* Los leads propios que terminaron cerrando, con lo que dejaron */
+  function misCierres() {
+    var campo = miRol() === 'Setter' ? 'setter' : 'closer';
+    var otro = campo === 'setter' ? 'closer' : 'setter';
+    var tasa = miComision() / 100;
+
+    return S.allRows('leads')
+      .filter(function (l) { return l[campo] === yo() && l.estado === 'Ganado'; })
+      .filter(function (l) { return M.enPeriodo(l.fecha_llamada || l.fecha_contacto, periodo); })
+      .map(function (l) {
+        var alumno = S.alumnoDe(l.id);
+        var cobrado = misPagos()
+          .filter(function (p) { var lead = leadDelPago(p); return lead && lead.id === l.id; })
+          .reduce(function (a, p) {
+            var monto = U.toNumber(p.monto) || 0;
+            return a + (p.tipo === 'Reembolso' ? -Math.abs(monto) : monto);
+          }, 0);
+        return {
+          lead: l,
+          fecha: l.fecha_llamada || l.fecha_contacto,
+          conQuien: l[otro] || '—',
+          programa: (alumno && alumno.programa) || l.oferta || '—',
+          precio: (alumno && U.toNumber(alumno.precio_total)) || U.toNumber(l.precio) || 0,
+          cobrado: cobrado,
+          comision: cobrado * tasa
+        };
+      })
+      .sort(function (a, b) { return (U.parseDate(b.fecha) || 0) - (U.parseDate(a.fecha) || 0); });
+  }
+
+  function cierresPanel(ctx) {
+    var cur = S.settings().currency;
+    var cierres = misCierres();
+    var otro = miRol() === 'Setter' ? 'Closer' : 'Setter';
+
+    if (!cierres.length) {
+      return el('section', { class: 'panel panel--wide' }, [
+        el('h3', { class: 'panel__title', text: 'Mis cierres' }),
+        el('p', { class: 'muted small', text: 'Todavía no hay cierres tuyos en este periodo.' })
+      ]);
+    }
+
+    var totalCobrado = cierres.reduce(function (a, c) { return a + c.cobrado; }, 0);
+    var totalComision = cierres.reduce(function (a, c) { return a + c.comision; }, 0);
+    var pendiente = cierres.reduce(function (a, c) { return a + Math.max(0, c.precio - c.cobrado); }, 0);
+
+    var tabla = el('table', { class: 'mini' }, [
+      el('thead', {}, [el('tr', {}, [
+        el('th', { text: 'Cliente' }), el('th', { text: 'Fecha' }), el('th', { text: otro }),
+        el('th', { text: 'Programa' }), el('th', { text: 'Valor' }),
+        el('th', { text: 'Cobrado' }), el('th', { text: 'Tu comisión' })
+      ])])
+    ]);
+    var tb = el('tbody');
+    cierres.forEach(function (c) {
+      tb.appendChild(el('tr', {
+        class: 'mini__click',
+        onclick: function () { AE.recordCard.open('leads', c.lead.id, ctx.refresh); }
+      }, [
+        el('td', { text: c.lead.nombre }),
+        el('td', { text: U.formatDate(c.fecha) }),
+        el('td', { text: c.conQuien }),
+        el('td', { text: c.programa }),
+        el('td', { text: c.precio ? U.money(c.precio, cur) : '—' }),
+        el('td', { text: U.money(c.cobrado, cur) }),
+        el('td', { class: 'pos', text: U.money(c.comision, cur) })
+      ]));
+    });
+    tabla.appendChild(tb);
+    tabla.appendChild(el('tfoot', {}, [el('tr', {}, [
+      el('td', { text: cierres.length + ' cierres' }),
+      el('td', {}), el('td', {}), el('td', {}), el('td', {}),
+      el('td', { text: U.money(totalCobrado, cur) }),
+      el('td', { class: 'pos', text: U.money(totalComision, cur) })
+    ])]));
+
+    return el('section', { class: 'panel panel--wide' }, [
+      el('h3', { class: 'panel__title', text: 'Mis cierres' }),
+      tabla,
+      pendiente > 0 ? el('p', { class: 'muted small', text:
+        'Quedan ' + U.money(pendiente, cur) + ' por cobrar de estos clientes. ' +
+        'Tu comisión se suma a medida que entra la plata.' }) : null
+    ]);
   }
 
   function comisionesPanel() {
@@ -482,7 +593,8 @@
     return el('section', { class: 'panel panel--wide' }, [
       el('h3', { class: 'panel__title', text: 'Mis comisiones' }),
       el('p', { class: 'muted small', text: 'Se calculan sobre el cash efectivamente cobrado, al ' +
-        U.num(miComision()) + '%. Si algo no coincide, avisale a administración.' }),
+        U.num(miComision()) + '%. Cuenta lo que lleva tu nombre en el cobro y, si el cobro no dice ' +
+        'quién fue, lo que pagaron tus leads. Si algo no coincide, avisale a administración.' }),
       cuerpo
     ]);
   }
@@ -495,5 +607,5 @@
     ]);
   }
 
-  AE.espacio = { render: render, misComisiones: misComisiones };
+  AE.espacio = { render: render, misComisiones: misComisiones, misCierres: misCierres };
 })(window.AE);
