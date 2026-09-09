@@ -100,31 +100,105 @@
 
   function kpis(d, cur, plata) {
     var items = [
-      { label: 'Leads nuevos', value: d.leads, hint: d.leadToCall + '% pasó a llamada' },
-      { label: 'Llamadas agendadas', value: d.agendadas, hint: d.noShows + ' no shows' },
-      { label: 'Show rate', value: d.showRate + '%', hint: d.shows + ' asistieron' },
-      { label: 'Cierres', value: d.cierres, hint: d.closeRate + '% close rate' }
+      { label: 'Leads nuevos', value: d.leads, hint: d.leadToCall + '% pasó a llamada',
+        rows: d.registros.nuevos, campoFecha: 'fecha_contacto',
+        criterio: 'Leads cuya fecha de contacto cae en el periodo elegido.' },
+      { label: 'Llamadas agendadas', value: d.agendadas, hint: d.noShows + ' no shows',
+        rows: d.registros.agendadas, campoFecha: 'fecha_llamada',
+        criterio: 'Leads cuya fecha de llamada cae en el periodo y que llegaron a agendar ' +
+          '(Agendado, No Show, Presentado, Seguimiento, Esperando pago, Ganado o Perdido). ' +
+          'Una llamada del mes pasado cuenta en el mes pasado, aunque el lead siga abierto.' },
+      { label: 'Show rate', value: d.showRate + '%', hint: d.shows + ' asistieron',
+        rows: d.registros.shows, campoFecha: 'fecha_llamada',
+        criterio: 'De las agendadas del periodo, las que se presentaron: Presentado, ' +
+          'Seguimiento, Esperando pago o Ganado.' },
+      { label: 'Cierres', value: d.cierres, hint: d.closeRate + '% close rate',
+        rows: d.registros.ganados, campoFecha: 'fecha_llamada',
+        criterio: 'Leads en estado Ganado con fecha de llamada dentro del periodo.' }
     ];
     if (plata) {
       items.push({ label: 'Cash collected', value: U.money(d.cash, cur), hint: 'Contratado ' + U.moneyShort(d.contratado, cur), strong: true });
       items.push({ label: 'Ticket promedio', value: U.money(d.ticket, cur), hint: d.cierres + ' cierres' });
-      items.push({ label: 'Pipeline abierto', value: U.money(d.pipeline, cur), hint: d.abiertos + ' oportunidades' });
+      items.push({ label: 'Pipeline abierto', value: U.money(d.pipeline, cur), hint: d.abiertos + ' oportunidades',
+        rows: d.registros.abiertos, campoFecha: 'fecha_llamada',
+        criterio: 'Todos los leads que siguen abiertos, sin importar la fecha.' });
       items.push({ label: 'Pipeline ponderado', value: U.money(d.ponderado, cur), hint: 'según probabilidad' });
     } else {
       var pendientes = M.misTareas().length;
-      items.push({ label: 'Oportunidades abiertas', value: d.abiertos, hint: 'en tu pipeline' });
-      items.push({ label: 'Perdidos', value: d.perdidos, hint: 'en el periodo' });
+      items.push({ label: 'Oportunidades abiertas', value: d.abiertos, hint: 'en tu pipeline',
+        rows: d.registros.abiertos, criterio: 'Leads tuyos que siguen abiertos.' });
+      items.push({ label: 'Perdidos', value: d.perdidos, hint: 'en el periodo',
+        rows: d.registros.perdidos, campoFecha: 'fecha_llamada',
+        criterio: 'Leads en estado Perdido con fecha de llamada dentro del periodo.' });
       items.push({ label: 'Tareas pendientes', value: pendientes, hint: pendientes ? 'te esperan' : 'todo al día', strong: !!pendientes });
     }
+    return grillaKpis(items);
+  }
+
+  /**
+   * Dibuja las tarjetas de KPI. Las que tienen una lista detrás se pueden
+   * abrir para ver exactamente qué registros se contaron y con qué criterio.
+   */
+  function grillaKpis(items) {
     var grid = el('div', { class: 'kpis' });
     items.forEach(function (k) {
-      grid.appendChild(el('div', { class: 'kpi' + (k.strong ? ' kpi--strong' : '') }, [
+      var abrible = !!(k.rows && k.rows.length);
+      var card = el('div', {
+        class: 'kpi' + (k.strong ? ' kpi--strong' : '') + (abrible ? ' kpi--abrible' : ''),
+        title: abrible ? 'Ver los registros que suman este número' : '',
+        onclick: abrible ? function () { detalleKpi(k); } : null
+      }, [
         el('span', { class: 'kpi__label', text: k.label }),
         el('span', { class: 'kpi__value', text: k.value }),
-        el('span', { class: 'kpi__hint', text: k.hint })
-      ]));
+        el('span', { class: 'kpi__hint', text: k.hint }),
+        abrible ? el('span', { class: 'kpi__lupa', text: '⧉' }) : null
+      ]);
+      grid.appendChild(card);
     });
     return grid;
+  }
+
+  /* De dónde sale este número: los registros, uno por uno */
+  function detalleKpi(k) {
+    var campoFecha = k.campoFecha || 'fecha_contacto';
+    var f = S.field('leads', campoFecha);
+    var tabla = el('table', { class: 'mini' }, [
+      el('thead', {}, [el('tr', {}, [
+        el('th', { text: 'Lead' }),
+        el('th', { text: f ? f.name : 'Fecha' }),
+        el('th', { text: 'Estado' }),
+        el('th', { text: 'Closer' }),
+        el('th', { text: 'Setter' })
+      ])])
+    ]);
+    var tb = el('tbody');
+    k.rows.slice().sort(function (a, b) {
+      return (U.parseDate(b[campoFecha]) || 0) - (U.parseDate(a[campoFecha]) || 0);
+    }).forEach(function (l) {
+      tb.appendChild(el('tr', {
+        class: 'mini__click',
+        onclick: function () { AE.recordCard.open('leads', l.id, function () { AE.app.render(); }); }
+      }, [
+        el('td', { text: l.nombre }),
+        el('td', { text: l[campoFecha] ? U.formatDateTime(l[campoFecha]) : '—' }),
+        el('td', { html: l.estado ? AE.fields.chip(l.estado, AE.fields.colorOf(S.field('leads', 'estado'), l.estado)) : '' }),
+        el('td', { text: l.closer || '—' }),
+        el('td', { text: l.setter || '—' })
+      ]));
+    });
+    tabla.appendChild(tb);
+
+    AE.ui.modal({
+      title: k.label + ': ' + k.value,
+      wide: true,
+      body: el('div', {}, [
+        el('p', { class: 'muted', text: (k.criterio || '') }),
+        tabla,
+        el('p', { class: 'muted small', text: 'Las vistas de la barra lateral (Panel Closer, Panel Setter) ' +
+          'no filtran por fecha: muestran todo lo que está abierto, por eso pueden marcar otro número.' })
+      ]),
+      actions: [{ label: 'Cerrar', kind: 'primary' }]
+    });
   }
 
   /* ---------------- gráfico de barras ---------------- */
@@ -537,5 +611,5 @@
     return box;
   }
 
-  AE.dashboard = { render: render };
+  AE.dashboard = { render: render, grillaKpis: grillaKpis, detalleKpi: detalleKpi };
 })(window.AE);

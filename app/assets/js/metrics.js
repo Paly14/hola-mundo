@@ -70,7 +70,10 @@
       pipeline: pipeline,
       ponderado: ponderado,
       abiertos: abiertos.length,
-      registros: { nuevos: nuevos, agendadas: agendadas, shows: shows, ganados: ganados, abiertos: abiertos }
+      registros: {
+        nuevos: nuevos, agendadas: agendadas, shows: shows, ganados: ganados,
+        abiertos: abiertos, noShows: noShows, perdidos: perdidos
+      }
     };
   }
 

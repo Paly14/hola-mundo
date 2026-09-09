@@ -568,7 +568,7 @@
 
   /* Se sube en cada publicación: sirve para saber de un vistazo si el
      navegador está viendo la última versión o una copia vieja en caché. */
-  var VERSION = '2026-09-09 · 6';
+  var VERSION = '2026-09-09 · 7';
 
   AE.schema = {
     VERSION: VERSION,

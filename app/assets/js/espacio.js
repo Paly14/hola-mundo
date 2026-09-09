@@ -184,18 +184,33 @@
       items = [
         { label: 'Conversaciones', value: act.conversaciones, hint: act.outbound + ' en frío' },
         { label: 'Agendas', value: act.agendas, hint: 'tasa ' + U.num(act.tasaAgenda * 100, 1) + '%' },
-        { label: 'Leads nuevos', value: d.leads, hint: d.abiertos + ' abiertos' },
-        { label: 'Shows', value: d.shows, hint: d.showRate + '% show rate' },
-        { label: 'Cierres', value: d.cierres, hint: d.closeRate + '% close rate' },
+        { label: 'Leads nuevos', value: d.leads, hint: d.abiertos + ' abiertos',
+          rows: d.registros.nuevos, campoFecha: 'fecha_contacto',
+          criterio: 'Tus leads cuya fecha de contacto cae en el periodo.' },
+        { label: 'Shows', value: d.shows, hint: d.showRate + '% show rate',
+          rows: d.registros.shows, campoFecha: 'fecha_llamada',
+          criterio: 'De tus agendadas del periodo, las que se presentaron.' },
+        { label: 'Cierres', value: d.cierres, hint: d.closeRate + '% close rate',
+          rows: d.registros.ganados, campoFecha: 'fecha_llamada',
+          criterio: 'Tus leads en estado Ganado con fecha de llamada dentro del periodo.' },
         { label: 'Tu comisión', value: U.money(com.totalPeriodo, S.settings().currency),
           hint: U.num(miComision()) + '% de ' + U.moneyShort(com.netoPeriodo, S.settings().currency) + ' netos', strong: true }
       ];
     } else {
       items = [
-        { label: 'Llamadas agendadas', value: d.agendadas, hint: d.noShows + ' no shows' },
-        { label: 'Shows', value: d.shows, hint: d.showRate + '% show rate' },
-        { label: 'Cierres', value: d.cierres, hint: d.closeRate + '% close rate' },
-        { label: 'En seguimiento', value: d.registros.abiertos.length, hint: 'para cerrar' },
+        { label: 'Llamadas agendadas', value: d.agendadas, hint: d.noShows + ' no shows',
+          rows: d.registros.agendadas, campoFecha: 'fecha_llamada',
+          criterio: 'Tus llamadas cuya fecha cae en el periodo elegido. Una call del mes ' +
+            'pasado cuenta en el mes pasado, aunque el lead siga abierto.' },
+        { label: 'Shows', value: d.shows, hint: d.showRate + '% show rate',
+          rows: d.registros.shows, campoFecha: 'fecha_llamada',
+          criterio: 'De tus agendadas del periodo, las que se presentaron.' },
+        { label: 'Cierres', value: d.cierres, hint: d.closeRate + '% close rate',
+          rows: d.registros.ganados, campoFecha: 'fecha_llamada',
+          criterio: 'Tus leads en estado Ganado con fecha de llamada dentro del periodo.' },
+        { label: 'En seguimiento', value: d.registros.abiertos.length, hint: 'para cerrar',
+          rows: d.registros.abiertos, campoFecha: 'fecha_llamada',
+          criterio: 'Todos tus leads abiertos, sin importar la fecha.' },
         { label: 'Cash generado', value: U.money(com.cashPeriodo, S.settings().currency),
           hint: com.plataformaPeriodo ? U.moneyShort(com.netoPeriodo, S.settings().currency) + ' netos' : 'de tus cierres' },
         { label: 'Tu comisión', value: U.money(com.totalPeriodo, S.settings().currency),
@@ -203,15 +218,7 @@
       ];
     }
 
-    var grid = el('div', { class: 'kpis' });
-    items.forEach(function (k) {
-      grid.appendChild(el('div', { class: 'kpi' + (k.strong ? ' kpi--strong' : '') }, [
-        el('span', { class: 'kpi__label', text: k.label }),
-        el('span', { class: 'kpi__value', text: k.value }),
-        el('span', { class: 'kpi__hint', text: k.hint })
-      ]));
-    });
-    return el('div', {}, [grid]);
+    return el('div', {}, [AE.dashboard.grillaKpis(items)]);
   }
 
   /* ---------------- mis leads con el seguimiento ---------------- */

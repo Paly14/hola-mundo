@@ -373,8 +373,15 @@ body.is-dash .view-body { padding: 20px 22px 40px; }
 .kpis { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); margin-bottom: 16px; }
 .kpi {
   background: #fff; border: 1px solid var(--line); border-radius: var(--r);
-  padding: 12px 14px; display: grid; gap: 2px;
+  padding: 12px 14px; display: grid; gap: 2px; position: relative;
 }
+.kpi--abrible { cursor: pointer; }
+.kpi--abrible:hover { border-color: var(--brand); }
+.kpi__lupa {
+  position: absolute; top: 9px; right: 10px;
+  font-size: 11px; color: var(--muted); opacity: 0;
+}
+.kpi--abrible:hover .kpi__lupa { opacity: 1; }
 .kpi--strong { background: linear-gradient(135deg, #fff, var(--brand-soft)); border-color: #ffd7bb; }
 .kpi__label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 .kpi__value { font-family: 'Sora'; font-size: 21px; font-weight: 700; }
