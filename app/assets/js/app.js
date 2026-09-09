@@ -116,6 +116,8 @@
         class: 'side__foot-btn', text: '⚙︎ Datos y ajustes',
         onclick: function (e) { menuAjustes(e.currentTarget); }
       }) : null,
+      el('div', { class: 'side__version', title: 'Versión publicada del CRM',
+        text: 'v ' + AE.schema.VERSION }),
       el('button', {
         class: 'side__foot-btn', text: '⇥ Cerrar sesión',
         onclick: function () {

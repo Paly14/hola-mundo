@@ -521,7 +521,12 @@
     { id: 'v_metas', tableId: 'metas', name: 'Metas por mes', type: 'grid', filters: [], sorts: [{ fieldId: 'mes', dir: 'desc' }], hidden: [] }
   ];
 
+  /* Se sube en cada publicación: sirve para saber de un vistazo si el
+     navegador está viendo la última versión o una copia vieja en caché. */
+  var VERSION = '2026-09-09 · 1';
+
   AE.schema = {
+    VERSION: VERSION,
     ESTADOS: ESTADOS,
     ETAPAS: ETAPAS,
     ROLES: ROLES,

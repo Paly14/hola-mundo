@@ -120,6 +120,8 @@ h1, h2, h3, h4, strong { font-family: 'Sora', sans-serif; letter-spacing: -0.01e
 .side__foot-btn.is-ok { color: #14a37f; border-color: #bdead9; }
 .side__foot-btn.is-warn { color: #e05260; border-color: #ffd2d7; }
 
+.side__version { font-size: 10px; color: var(--muted); text-align: center; padding: 2px 0 4px; }
+
 .side-scrim { display: none; }
 
 /* ================= área principal ================= */
