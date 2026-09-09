@@ -268,6 +268,149 @@
       .slice(0, limite || 6);
   }
 
+  /* ---------------- comisiones del equipo ---------------- */
+
+  /* Lo que entró por un cobro, ya descontada la plataforma de pago */
+  function netoDePago(p) {
+    var monto = U.toNumber(p.monto) || 0;
+    var costo = U.toNumber(p.comision_plataforma) || 0;
+    return p.tipo === 'Reembolso' ? -Math.abs(monto - costo) : (monto - costo);
+  }
+
+  function brutoDePago(p) {
+    var monto = U.toNumber(p.monto) || 0;
+    return p.tipo === 'Reembolso' ? -Math.abs(monto) : monto;
+  }
+
+  function leadDelPago(pago) {
+    if (pago.lead) return S.record('leads', pago.lead);
+    if (pago.alumno) {
+      var alumno = S.record('alumnos', pago.alumno);
+      if (alumno && alumno.lead) return S.record('leads', alumno.lead);
+    }
+    return null;
+  }
+
+  var COMISION_POR_ROL = { Closer: 10, Setter: 5 };
+
+  function porcentajeDe(persona) {
+    var valor = U.toNumber(persona.comision);
+    if (valor != null && valor > 0) return valor;
+    return COMISION_POR_ROL[persona.rol] || 0;
+  }
+
+  /**
+   * Cobros que le corresponden a una persona: los que llevan su nombre y,
+   * cuando el cobro no dice quién fue, los de sus propios leads.
+   * Quien comisiona "sobre todas las ventas" se lleva todos.
+   */
+  function pagosDePersona(persona) {
+    var t = S.table('pagos');
+    if (!t || !persona || !persona.nombre) return [];
+    if (persona.base_comision === 'Todas las ventas') return t.records.slice();
+
+    var campo = persona.rol === 'Setter' ? 'setter' : persona.rol === 'Closer' ? 'closer' : null;
+    if (!campo) return [];
+    return t.records.filter(function (p) {
+      if (p[campo]) return p[campo] === persona.nombre;
+      var lead = leadDelPago(p);
+      return !!(lead && lead[campo] === persona.nombre);
+    });
+  }
+
+  /* Lo que le toca a una persona en un periodo */
+  function comisionDe(persona, periodo) {
+    var tasa = porcentajeDe(persona) / 100;
+    var pagos = pagosDePersona(persona).filter(function (p) { return enPeriodo(p.fecha, periodo); });
+    var bruto = 0, plataforma = 0;
+    pagos.forEach(function (p) {
+      bruto += brutoDePago(p);
+      plataforma += (U.toNumber(p.comision_plataforma) || 0) * (p.tipo === 'Reembolso' ? -1 : 1);
+    });
+    var neto = bruto - plataforma;
+    return {
+      persona: persona, tasa: tasa, porcentaje: porcentajeDe(persona),
+      pagos: pagos, bruto: bruto, plataforma: plataforma, neto: neto,
+      comision: neto * tasa
+    };
+  }
+
+  /* Todas las comisiones del periodo, agrupadas por rol como en la planilla */
+  function comisionesEquipo(periodo) {
+    var gente = S.allRows('equipo').filter(function (p) {
+      return p.activo !== false && p.nombre && porcentajeDe(p) > 0;
+    });
+    var detalle = gente.map(function (p) { return comisionDe(p, periodo); })
+      .filter(function (c) { return c.comision !== 0 || c.pagos.length; });
+
+    function sumaRol(filtro) {
+      return detalle.filter(filtro).reduce(function (a, c) { return a + c.comision; }, 0);
+    }
+
+    var setters = sumaRol(function (c) { return c.persona.rol === 'Setter'; });
+    var closers = sumaRol(function (c) { return c.persona.rol === 'Closer'; });
+    var growth = sumaRol(function (c) {
+      return c.persona.rol !== 'Setter' && c.persona.rol !== 'Closer';
+    });
+
+    return {
+      detalle: detalle.sort(function (a, b) { return b.comision - a.comision; }),
+      setters: setters, closers: closers, growth: growth,
+      total: setters + closers + growth
+    };
+  }
+
+  /* ---------------- gastos ---------------- */
+
+  function gastos(periodo) {
+    var lista = S.allRows('gastos').filter(function (g) { return enPeriodo(g.fecha, periodo); });
+    var porCategoria = {};
+    var total = 0;
+    lista.forEach(function (g) {
+      var monto = U.toNumber(g.monto) || 0;
+      total += monto;
+      var cat = g.categoria || 'Otros';
+      porCategoria[cat] = (porCategoria[cat] || 0) + monto;
+    });
+    return {
+      lista: lista, total: total,
+      porCategoria: aLista(porCategoria),
+      ads: porCategoria['Tráfico (Ads)'] || 0,
+      herramientas: porCategoria['Herramientas y software'] || 0,
+      otros: total - (porCategoria['Tráfico (Ads)'] || 0) - (porCategoria['Herramientas y software'] || 0)
+    };
+  }
+
+  /* ---------------- resultado del periodo ---------------- */
+
+  /**
+   * El estado de resultados: de lo que se cobró a lo que realmente queda,
+   * pasando por la plataforma de pago, las comisiones y los gastos.
+   */
+  function resultado(periodo) {
+    var f = facturacion(periodo);
+    var com = comisionesEquipo(periodo);
+    var g = gastos(periodo);
+    var d = calcular(periodo);
+
+    var netoCobrado = f.neto;                       // cobrado menos plataformas
+    var egresos = com.total + g.total;
+    var ganancia = netoCobrado - egresos;
+
+    return {
+      periodo: periodo,
+      cobrado: f.total, plataforma: f.plataforma, netoCobrado: netoCobrado,
+      comisiones: com, gastos: g,
+      egresos: egresos, ganancia: ganancia,
+      margen: f.total ? U.pct(ganancia, f.total, 1) : 0,
+      cierres: d.cierres,
+      cac: d.cierres ? g.ads / d.cierres : 0,
+      roas: g.ads ? f.total / g.ads : 0,
+      costoPorLead: d.leads ? g.ads / d.leads : 0,
+      leads: d.leads
+    };
+  }
+
   /* ---------------- alumnos ---------------- */
 
   function alumnos() {
@@ -352,6 +495,10 @@
     facturacion: facturacion, saldosPendientes: saldosPendientes,
     topClientes: topClientes, misTareas: misTareas,
     alumnos: alumnos, actividadSetter: actividadSetter, diaDeHoy: diaDeHoy,
+    netoDePago: netoDePago, brutoDePago: brutoDePago, leadDelPago: leadDelPago,
+    pagosDePersona: pagosDePersona, porcentajeDe: porcentajeDe,
+    comisionDe: comisionDe, comisionesEquipo: comisionesEquipo,
+    gastos: gastos, resultado: resultado,
     metaDe: metaDe, enPeriodo: enPeriodo
   };
 })(window.AE);

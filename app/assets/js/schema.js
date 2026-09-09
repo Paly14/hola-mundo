@@ -283,6 +283,36 @@
       ]
     },
     {
+      id: 'gastos', name: 'Gastos', icon: '🧾', primary: 'concepto',
+      fields: [
+        field('fecha', 'Fecha', 'date', { width: 130 }),
+        field('concepto', 'Concepto', 'text', { width: 240 }),
+        field('categoria', 'Categoría', 'select', {
+          width: 175,
+          options: [
+            { name: 'Tráfico (Ads)', color: '#fb7185' },
+            { name: 'Herramientas y software', color: '#5b9dff' },
+            { name: 'Sueldos y honorarios', color: '#c084fc' },
+            { name: 'Impuestos y bancarios', color: '#f2c14e' },
+            { name: 'Contenido y producción', color: '#3ec9a7' },
+            { name: 'Otros', color: '#94a3b8' }
+          ]
+        }),
+        field('monto', 'Monto', 'currency', { width: 130 }),
+        field('proveedor', 'Proveedor', 'text', { width: 170 }),
+        field('metodo', 'Pagado con', 'select', {
+          width: 150,
+          options: [
+            { name: 'Transferencia' }, { name: 'Mercado Pago' }, { name: 'Stripe' },
+            { name: 'Tarjeta' }, { name: 'Efectivo' }, { name: 'Cripto' }, { name: 'Otro' }
+          ]
+        }),
+        field('recurrente', 'Recurrente', 'checkbox', { width: 115 }),
+        field('comprobante', 'Comprobante', 'url', { width: 165 }),
+        field('notas', 'Notas', 'longtext', { width: 240 })
+      ]
+    },
+    {
       id: 'metodos_cobro', name: 'Métodos de cobro', icon: '🔗', primary: 'nombre',
       fields: [
         field('nombre', 'Nombre', 'text', { width: 210 }),
@@ -504,6 +534,15 @@
       filters: [], sorts: [{ fieldId: 'fecha', dir: 'desc' }], groupBy: 'lead', hidden: ['notas', 'closer']
     },
     {
+      id: 'v_gastos', tableId: 'gastos', name: 'Gastos del mes', type: 'grid',
+      filters: [{ fieldId: 'fecha', op: 'isWithin', value: 'mes' }],
+      sorts: [{ fieldId: 'fecha', dir: 'desc' }], hidden: []
+    },
+    {
+      id: 'v_gastos_todos', tableId: 'gastos', name: 'Todos los gastos', type: 'grid',
+      filters: [], sorts: [{ fieldId: 'fecha', dir: 'desc' }], groupBy: 'categoria', hidden: []
+    },
+    {
       id: 'v_cobros_links', tableId: 'metodos_cobro', name: 'Links y datos de pago', type: 'gallery',
       filters: [{ fieldId: 'activo', op: 'is', value: true }], sorts: [], hidden: []
     },
@@ -568,7 +607,7 @@
 
   /* Se sube en cada publicación: sirve para saber de un vistazo si el
      navegador está viendo la última versión o una copia vieja en caché. */
-  var VERSION = '2026-09-09 · 7';
+  var VERSION = '2026-09-09 · 8';
 
   AE.schema = {
     VERSION: VERSION,

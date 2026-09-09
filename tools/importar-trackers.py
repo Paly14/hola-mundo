@@ -348,12 +348,15 @@ def main():
 
     # --- Catálogo de programas ---
     programas = [
-        ('Programa Completo', 'Programa principal', 997, 90,
+        ('VIP', 'Programa principal', 997, 90,
          'Programa completo de Alpha Ecommerce: formación, acompañamiento y comunidad.'),
-        ('Downsell', 'Downsell', 300, 90,
-         'Versión reducida del programa. Dejá acá qué se entrega exactamente.'),
-        ('Mentoría 1:1', 'Programa principal', None, 90, ''),
-        ('Acompañamiento', 'Programa principal', None, 90, ''),
+        ('Alpha Inicial', 'Programa principal', 497, 90,
+         'Importación + Ecommerce + Ads.'),
+        ('Basic Ecomm', 'Downsell', 297, 90, 'Un paquete: Ecommerce.'),
+        ('Basic Importación', 'Downsell', 297, 90, 'Un paquete: Importación.'),
+        ('Solo Importación', 'Downsell', 250, 90, 'Sólo el módulo de importación.'),
+        ('Downsell', 'Downsell', None, 90,
+         'Downsell a medida: el precio se acuerda en la llamada.'),
     ]
     programas = [{
         'id': 'rec_prog_' + re.sub(r'[^a-z0-9]+', '', sinacentos(n))[:16],
@@ -366,6 +369,7 @@ def main():
     CORRECCIONES = {
         'leon': {
             'precio_total': 997,
+            'programa': 'VIP',          # "Programa Completo" y "VIP" son lo mismo
             'modalidad': 'Plan de cuotas',
         },
         'matias': {

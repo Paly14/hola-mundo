@@ -24,11 +24,16 @@
     ]));
 
     if (plata) {
+      host.appendChild(resultadoPanel(cur));
       host.appendChild(proyeccionPanel(M.proyeccion(), cur));
       host.appendChild(alumnosPanel(cur));
       host.appendChild(el('div', { class: 'dash-grid' }, [
         panel('Facturación del periodo', facturacionPanel(cur)),
         panel('Saldos por cobrar', saldosPanel(cur))
+      ]));
+      host.appendChild(el('div', { class: 'dash-grid' }, [
+        panel('Gastos del periodo', gastosPanel(cur)),
+        panel('Resultado mes a mes', resumenMensual(cur))
       ]));
       host.appendChild(el('div', { class: 'dash-grid' }, [
         panel('Actividad del setter', setterPanel()),
@@ -414,6 +419,123 @@
       ]));
     });
     return box;
+  }
+
+  /* ---------------- resultado del periodo (el P&L) ---------------- */
+
+  function resultadoPanel(cur) {
+    var r = M.resultado(periodo);
+
+    function linea(etiqueta, monto, opciones) {
+      opciones = opciones || {};
+      return el('div', { class: 'pl__row' + (opciones.clase ? ' ' + opciones.clase : '') }, [
+        el('span', { class: 'pl__label', text: etiqueta }),
+        opciones.detalle ? el('span', { class: 'pl__detalle', text: opciones.detalle }) : el('span'),
+        el('span', {
+          class: 'pl__monto' + (opciones.negativo ? ' neg' : '') + (opciones.positivo ? ' pos' : ''),
+          text: (opciones.negativo && monto ? '− ' : '') + U.money(Math.abs(monto), cur)
+        })
+      ]);
+    }
+
+    var filas = el('div', { class: 'pl' }, [
+      linea('Cash collected', r.cobrado, { detalle: r.cierres + ' cierres' }),
+      linea('Comisión de plataformas', r.plataforma, { negativo: true, detalle: 'Stripe, PayPal, Mercado Pago' }),
+      linea('Neto cobrado', r.netoCobrado, { clase: 'pl__row--sub' }),
+      linea('Comisión setters', r.comisiones.setters, { negativo: true }),
+      linea('Comisión closers', r.comisiones.closers, { negativo: true }),
+      linea('Comisión growth', r.comisiones.growth, { negativo: true }),
+      linea('Tráfico (Ads)', r.gastos.ads, { negativo: true }),
+      linea('Herramientas y software', r.gastos.herramientas, { negativo: true }),
+      linea('Otros gastos', r.gastos.otros, { negativo: true }),
+      linea('Ganancia neta', r.ganancia, {
+        clase: 'pl__row--total', positivo: r.ganancia >= 0, negativo: r.ganancia < 0,
+        detalle: 'margen ' + U.num(r.margen, 1) + '%'
+      })
+    ]);
+
+    var indicadores = el('div', { class: 'proj-grid' }, [
+      projItem('Inversión en ads', U.money(r.gastos.ads, cur),
+        r.gastos.ads ? U.pct(r.gastos.ads, r.cobrado, 1) + '% del cash' : 'sin inversión cargada'),
+      projItem('ROAS', r.roas ? U.num(r.roas, 2) + 'x' : '—', 'cash cobrado por cada dólar en ads'),
+      projItem('Costo por cierre', r.cac ? U.money(r.cac, cur) : '—', r.cierres + ' cierres'),
+      projItem('Costo por lead', r.costoPorLead ? U.money(r.costoPorLead, cur) : '—', r.leads + ' leads')
+    ]);
+
+    return el('section', { class: 'panel panel--wide' }, [
+      el('h3', { class: 'panel__title', text: 'Resultado del periodo' }),
+      el('p', { class: 'muted small', text: 'Las comisiones salen solas de los cobros cargados, ' +
+        'al porcentaje de cada uno y sobre el neto. Los gastos salen de la tabla Gastos.' }),
+      filas,
+      indicadores
+    ]);
+  }
+
+  function gastosPanel(cur) {
+    var g = M.gastos(periodo);
+    if (!g.total) {
+      return el('div', {}, [
+        el('p', { class: 'muted small', text: 'No hay gastos cargados en este periodo.' }),
+        el('button', {
+          class: 'btn2', text: 'Cargar un gasto',
+          onclick: function () { AE.app.ir('#/view/v_gastos'); }
+        })
+      ]);
+    }
+    var max = Math.max.apply(null, g.porCategoria.map(function (c) { return c.total; }));
+    var box = el('div', { class: 'dist' });
+    g.porCategoria.forEach(function (c) {
+      box.appendChild(el('div', { class: 'dist__row' }, [
+        el('span', { class: 'dist__label', text: c.key }),
+        el('div', { class: 'dist__track' }, [
+          el('div', { class: 'dist__bar', style: 'width:' + Math.max(4, (c.total / max) * 100) + '%;--chip:' + U.colorFor(c.key) })
+        ]),
+        el('span', { class: 'dist__n', text: U.moneyShort(c.total, cur) })
+      ]));
+    });
+    return el('div', {}, [
+      box,
+      el('p', { class: 'muted small', text: 'Total del periodo: ' + U.money(g.total, cur) +
+        ' en ' + g.lista.length + ' gastos.' })
+    ]);
+  }
+
+  /* La tabla anual del Excel, pero calculada sola */
+  function resumenMensual(cur) {
+    var meses = [];
+    var base = U.monthKey(new Date());
+    for (var i = 5; i >= 0; i--) meses.push(U.addMonths(base, -i));
+
+    var tabla = el('table', { class: 'mini' }, [
+      el('thead', {}, [el('tr', {}, [
+        el('th', { text: 'Mes' }), el('th', { text: 'Cash' }), el('th', { text: 'Comisiones' }),
+        el('th', { text: 'Ads' }), el('th', { text: 'Otros' }),
+        el('th', { text: 'Ganancia' }), el('th', { text: 'Margen' })
+      ])])
+    ]);
+    var tb = el('tbody');
+    meses.reverse().forEach(function (mes) {
+      var r = M.resultado(mes);
+      if (!r.cobrado && !r.egresos) return;
+      tb.appendChild(el('tr', {}, [
+        el('td', { text: U.monthLabel(mes) }),
+        el('td', { text: U.moneyShort(r.cobrado, cur) }),
+        el('td', { text: U.moneyShort(r.comisiones.total, cur) }),
+        el('td', { text: U.moneyShort(r.gastos.ads, cur) }),
+        el('td', { text: U.moneyShort(r.gastos.total - r.gastos.ads + r.plataforma, cur) }),
+        el('td', { class: r.ganancia >= 0 ? 'pos' : 'neg', text: U.moneyShort(r.ganancia, cur) }),
+        el('td', { class: r.margen >= 0 ? 'pos' : 'neg', text: U.num(r.margen, 1) + '%' })
+      ]));
+    });
+    tabla.appendChild(tb);
+    if (!tb.children.length) {
+      return el('p', { class: 'muted small', text: 'Todavía no hay meses con movimiento.' });
+    }
+    return el('div', {}, [
+      tabla,
+      el('p', { class: 'muted small', text: '"Otros" junta las comisiones de plataforma, ' +
+        'herramientas y el resto de los gastos.' })
+    ]);
   }
 
   /* ---------------- alumnos ---------------- */

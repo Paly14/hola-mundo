@@ -641,6 +641,23 @@ body.is-auth .main { display: none; }
 .form-error { color: #e05260; font-size: 13px; font-weight: 600; }
 .form-error:empty { display: none; }
 
+.pl { display: grid; gap: 1px; margin-bottom: 14px; }
+.pl__row {
+  display: grid; grid-template-columns: minmax(150px, 1.2fr) 1fr auto;
+  gap: 10px; align-items: baseline;
+  padding: 7px 10px; border-bottom: 1px solid var(--line-soft); font-size: 13px;
+}
+.pl__label { font-weight: 500; }
+.pl__detalle { font-size: 11px; color: var(--muted); }
+.pl__monto { font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; }
+.pl__row--sub { background: #fbf9f7; border-radius: 8px; }
+.pl__row--total {
+  background: var(--brand-soft); border-radius: 9px; border-bottom: none;
+  margin-top: 6px; padding: 11px 10px;
+}
+.pl__row--total .pl__label { font-family: 'Sora', sans-serif; font-weight: 700; }
+.pl__row--total .pl__monto { font-family: 'Sora', sans-serif; font-size: 17px; }
+
 /* ================= mi espacio ================= */
 
 .accesos { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); }

@@ -11,9 +11,6 @@
   var PERIODOS = { mes: 'Este mes', mesPasado: 'Mes pasado', '90d': 'Últimos 90 días', todo: 'Todo' };
   var periodo = 'mes';
 
-  /* Comisión por defecto si la persona no la tiene cargada en Equipo */
-  var COMISION = { Closer: 10, Setter: 5 };
-
   /* Un admin puede mirar el espacio de otra persona sin cerrar sesión */
   var viendoComo = null;
 
@@ -39,11 +36,7 @@
 
   function esVendedor(rol) { return rol === 'Setter' || rol === 'Closer'; }
 
-  function miComision() {
-    var ficha = miFicha();
-    var valor = U.toNumber(ficha.comision);
-    return valor != null && valor > 0 ? valor : (COMISION[miRol()] || 0);
-  }
+  function miComision() { return M.porcentajeDe(miFicha()); }
 
   /* Hay gente que comisiona sobre sus propios cierres y gente sobre todo lo
      que factura el negocio (por ejemplo, quien dirige el área comercial). */
@@ -514,32 +507,10 @@
 
   /* ---------------- comisiones ---------------- */
 
-  /* El lead detrás de un cobro, ya sea por vínculo directo o por el alumno */
-  function leadDelPago(pago) {
-    if (pago.lead) return S.record('leads', pago.lead);
-    if (pago.alumno) {
-      var alumno = S.record('alumnos', pago.alumno);
-      if (alumno && alumno.lead) return S.record('leads', alumno.lead);
-    }
-    return null;
-  }
+  /* Las reglas de atribución viven en metrics: acá sólo se consultan */
+  function leadDelPago(pago) { return M.leadDelPago(pago); }
 
-  /**
-   * Cobros que le corresponden a esta persona: los que llevan su nombre y,
-   * cuando el cobro no dice quién fue, los de sus propios leads. Sin esto,
-   * el setter no vería nada de lo que cierran sus leads.
-   */
-  function misPagos() {
-    var tabla = S.table('pagos');
-    if (!tabla) return [];
-    if (comisionaTodo()) return tabla.records.slice();
-    var campo = miRol() === 'Setter' ? 'setter' : 'closer';
-    return tabla.records.filter(function (p) {
-      if (p[campo]) return p[campo] === yo();
-      var lead = leadDelPago(p);
-      return !!(lead && lead[campo] === yo());
-    });
-  }
+  function misPagos() { return M.pagosDePersona(miFicha()); }
 
   /**
    * Las comisiones se calculan sobre el cash efectivamente cobrado.
@@ -551,26 +522,18 @@
     /* La comisión se calcula sobre lo que entra de verdad: el cobro menos
        lo que se queda la plataforma de pago. */
     function armar(lista) {
-      var bruto = 0, plataforma = 0;
+      var bruto = 0, neto = 0;
       lista.forEach(function (p) {
-        var monto = U.toNumber(p.monto) || 0;
-        var costo = U.toNumber(p.comision_plataforma) || 0;
-        if (p.tipo === 'Reembolso') { bruto -= Math.abs(monto); plataforma -= Math.abs(costo); }
-        else { bruto += monto; plataforma += costo; }
+        bruto += M.brutoDePago(p);
+        neto += M.netoDePago(p);
       });
-      var neto = bruto - plataforma;
       return {
-        bruto: bruto, plataforma: plataforma, neto: neto,
+        bruto: bruto, plataforma: bruto - neto, neto: neto,
         cash: bruto, comision: neto * tasa, cantidad: lista.length
       };
     }
 
-    /* Lo que entró por un cobro, ya descontada la plataforma */
-    function netoDe(p) {
-      var monto = U.toNumber(p.monto) || 0;
-      var costo = U.toNumber(p.comision_plataforma) || 0;
-      return (p.tipo === 'Reembolso' ? -Math.abs(monto - costo) : monto - costo);
-    }
+    var netoDe = M.netoDePago;
 
     var delPeriodo = todos.filter(function (p) { return M.enPeriodo(p.fecha, periodo); });
     var nuevos = delPeriodo.filter(function (p) { return p.tipo !== 'Cuota'; });
@@ -611,16 +574,14 @@
       .filter(function (l) { return M.enPeriodo(l.fecha_llamada || l.fecha_contacto, periodo); })
       .map(function (l) {
         var alumno = S.alumnoDe(l.id);
-        var cobrado = 0, plataforma = 0;
+        var cobrado = 0, neto = 0;
         misPagos()
           .filter(function (p) { var lead = leadDelPago(p); return lead && lead.id === l.id; })
           .forEach(function (p) {
-            var monto = U.toNumber(p.monto) || 0;
-            var costo = U.toNumber(p.comision_plataforma) || 0;
-            if (p.tipo === 'Reembolso') { cobrado -= Math.abs(monto); plataforma -= Math.abs(costo); }
-            else { cobrado += monto; plataforma += costo; }
+            cobrado += M.brutoDePago(p);
+            neto += M.netoDePago(p);
           });
-        var neto = cobrado - plataforma;
+        var plataforma = cobrado - neto;
         return {
           lead: l,
           fecha: l.fecha_llamada || l.fecha_contacto,

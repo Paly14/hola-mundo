@@ -58,8 +58,8 @@
   ],
   "programas": [
     {
-      "id": "rec_prog_programacompleto",
-      "nombre": "Programa Completo",
+      "id": "rec_prog_vip",
+      "nombre": "VIP",
       "tipo": "Programa principal",
       "precio_lista": 997,
       "duracion_dias": 90,
@@ -67,30 +67,48 @@
       "activo": true
     },
     {
+      "id": "rec_prog_alphainicial",
+      "nombre": "Alpha Inicial",
+      "tipo": "Programa principal",
+      "precio_lista": 497,
+      "duracion_dias": 90,
+      "que_incluye": "Importación + Ecommerce + Ads.",
+      "activo": true
+    },
+    {
+      "id": "rec_prog_basicecomm",
+      "nombre": "Basic Ecomm",
+      "tipo": "Downsell",
+      "precio_lista": 297,
+      "duracion_dias": 90,
+      "que_incluye": "Un paquete: Ecommerce.",
+      "activo": true
+    },
+    {
+      "id": "rec_prog_basicimportacion",
+      "nombre": "Basic Importación",
+      "tipo": "Downsell",
+      "precio_lista": 297,
+      "duracion_dias": 90,
+      "que_incluye": "Un paquete: Importación.",
+      "activo": true
+    },
+    {
+      "id": "rec_prog_soloimportacion",
+      "nombre": "Solo Importación",
+      "tipo": "Downsell",
+      "precio_lista": 250,
+      "duracion_dias": 90,
+      "que_incluye": "Sólo el módulo de importación.",
+      "activo": true
+    },
+    {
       "id": "rec_prog_downsell",
       "nombre": "Downsell",
       "tipo": "Downsell",
-      "precio_lista": 300,
-      "duracion_dias": 90,
-      "que_incluye": "Versión reducida del programa. Dejá acá qué se entrega exactamente.",
-      "activo": true
-    },
-    {
-      "id": "rec_prog_mentoria11",
-      "nombre": "Mentoría 1:1",
-      "tipo": "Programa principal",
       "precio_lista": null,
       "duracion_dias": 90,
-      "que_incluye": "",
-      "activo": true
-    },
-    {
-      "id": "rec_prog_acompanamiento",
-      "nombre": "Acompañamiento",
-      "tipo": "Programa principal",
-      "precio_lista": null,
-      "duracion_dias": 90,
-      "que_incluye": "",
+      "que_incluye": "Downsell a medida: el precio se acuerda en la llamada.",
       "activo": true
     }
   ],
@@ -262,7 +280,7 @@
       "nombre": "Leon",
       "email": "",
       "telefono": "",
-      "programa": "Programa Completo",
+      "programa": "VIP",
       "estado": "Activo",
       "fecha_ingreso": "2026-07-27",
       "duracion": 90,
@@ -353,7 +371,7 @@
       "closer": "",
       "factura": "",
       "notas": "Migrado de Gestión de Alumnos.",
-      "programa": "Programa Completo",
+      "programa": "VIP",
       "naturaleza": "Cuota",
       "setter": ""
     },
@@ -574,7 +592,7 @@
       "area": "Administración",
       "vence": "",
       "lead": "",
-      "detalle": "Programa Programa Completo. Próxima cuota: sin definir",
+      "detalle": "Programa VIP. Próxima cuota: sin definir",
       "creada_por": "Hernán"
     },
     {
