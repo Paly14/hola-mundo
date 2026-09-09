@@ -1,0 +1,6 @@
+# Configuración del sitio dedicado al CRM interno.
+# En Netlify, este sitio tiene "Base directory" = app, así que se publica
+# esta carpeta como raíz: el CRM queda en la dirección principal del sitio.
+[build]
+  publish = "."
+  command = ""

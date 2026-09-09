@@ -1,0 +1,3 @@
+# El CRM es interno: no queremos que ningún buscador lo indexe.
+User-agent: *
+Disallow: /

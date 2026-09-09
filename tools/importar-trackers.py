@@ -463,9 +463,8 @@ def main():
         ('Manejo de objeciones', 'Formación', 'Closer', 'Precio, tiempo, pareja, confianza.', True),
         ('Contrato de servicio', 'Contratos', 'Closer', 'Modelo para enviar al cerrar.', False),
         ('Carpeta de comprobantes de pago', 'Otros', 'Admin', 'Drive con los comprobantes.', False),
-        ('Landing de Alpha Ecommerce', 'Otros', 'Todos', 'La página que ven los leads.', False),
+        ('Landing de Alpha Ecommerce', 'Otros', 'Todos', 'Pegá acá el link de la landing.', False),
     ])]
-    recursos[5]['url'] = '../index.html'
 
     meta_cash = config.get('meta_cash') or 0
     hoy = datetime.date.today()

@@ -762,8 +762,8 @@
       "titulo": "Landing de Alpha Ecommerce",
       "categoria": "Otros",
       "para": "Todos",
-      "url": "../index.html",
-      "descripcion": "La página que ven los leads.",
+      "url": "",
+      "descripcion": "Pegá acá el link de la landing.",
       "destacado": false
     }
   ],
