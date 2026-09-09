@@ -208,9 +208,145 @@
       .sort(function (a, b) { return b.total - a.total; });
   }
 
+  /* ---------------- facturación (sale de la tabla de cobros) ---------------- */
+
+  function facturacion(periodo) {
+    var pagos = S.allRows('pagos').filter(function (p) { return enPeriodo(p.fecha, periodo); });
+    var neto = 0, reembolsos = 0;
+    var porMetodo = {}, porTipo = {};
+    pagos.forEach(function (p) {
+      var monto = U.toNumber(p.monto) || 0;
+      if (p.tipo === 'Reembolso') { reembolsos += Math.abs(monto); neto -= Math.abs(monto); }
+      else neto += monto;
+      var m = p.metodo || 'Sin método';
+      porMetodo[m] = (porMetodo[m] || 0) + (p.tipo === 'Reembolso' ? -Math.abs(monto) : monto);
+      var t = p.tipo || 'Pago';
+      porTipo[t] = (porTipo[t] || 0) + 1;
+    });
+    return {
+      total: neto, reembolsos: reembolsos, cantidad: pagos.length,
+      promedio: pagos.length ? neto / pagos.length : 0,
+      porMetodo: aLista(porMetodo), porTipo: aLista(porTipo), pagos: pagos
+    };
+  }
+
+  function aLista(mapa) {
+    return Object.keys(mapa).map(function (k) { return { key: k, total: mapa[k] }; })
+      .sort(function (a, b) { return b.total - a.total; });
+  }
+
+  /* Clientes ganados que todavía deben plata */
+  function saldosPendientes() {
+    return S.allRows('leads')
+      .filter(function (l) { return l.estado === 'Ganado'; })
+      .map(function (l) {
+        var valor = U.toNumber(l.precio) || 0;
+        var pagado = S.cobrado(l.id) || U.toNumber(l.cash_collected) || 0;
+        return { id: l.id, nombre: l.nombre, closer: l.closer, valor: valor, pagado: pagado, saldo: valor - pagado };
+      })
+      .filter(function (c) { return c.saldo > 0.5; })
+      .sort(function (a, b) { return b.saldo - a.saldo; });
+  }
+
+  /* Historial: cuánto pagó cada cliente */
+  function topClientes(periodo, limite) {
+    var mapa = {};
+    S.allRows('pagos').filter(function (p) { return enPeriodo(p.fecha, periodo); }).forEach(function (p) {
+      if (!p.lead) return;
+      var monto = U.toNumber(p.monto) || 0;
+      if (!mapa[p.lead]) mapa[p.lead] = { id: p.lead, nombre: S.titleOf('leads', p.lead), total: 0, pagos: 0 };
+      mapa[p.lead].total += p.tipo === 'Reembolso' ? -Math.abs(monto) : monto;
+      mapa[p.lead].pagos++;
+    });
+    return Object.keys(mapa).map(function (k) { return mapa[k]; })
+      .sort(function (a, b) { return b.total - a.total; })
+      .slice(0, limite || 6);
+  }
+
+  /* ---------------- alumnos ---------------- */
+
+  function alumnos() {
+    var lista = S.allRows('alumnos');
+    var suma = function (campo) {
+      return lista.reduce(function (a, x) { return a + (U.toNumber(x[campo]) || 0); }, 0);
+    };
+    var proximas = lista.filter(function (a) {
+      var dias = a.proxima_cuota ? U.daysBetween(new Date(), a.proxima_cuota) : null;
+      return dias != null && dias <= 7;
+    }).sort(function (a, b) { return (U.parseDate(a.proxima_cuota) || 0) - (U.parseDate(b.proxima_cuota) || 0); });
+
+    return {
+      lista: lista,
+      total: lista.length,
+      activos: lista.filter(function (a) { return a.estado === 'Activo'; }).length,
+      porVencer: lista.filter(function (a) { return a.estado === 'Por vencer'; }).length,
+      vencidos: lista.filter(function (a) { return a.estado === 'Vencido'; }).length,
+      casosExito: lista.filter(function (a) { return a.caso_exito; }).length,
+      facturado: suma('precio_total'),
+      cobrado: suma('total_pagado'),
+      saldo: suma('saldo'),
+      proximasCuotas: proximas,
+      porVencerPronto: lista.filter(function (a) {
+        return a.dias_restantes != null && a.dias_restantes >= 0 && a.dias_restantes <= 15;
+      }).sort(function (a, b) { return a.dias_restantes - b.dias_restantes; })
+    };
+  }
+
+  /* ---------------- actividad diaria del setter ---------------- */
+
+  function actividadSetter(periodo, setter) {
+    var dias = S.allRows('setter_dia').filter(function (d) {
+      if (setter && d.setter !== setter) return false;
+      return enPeriodo(d.fecha, periodo);
+    });
+    var suma = function (campo) {
+      return dias.reduce(function (a, d) { return a + (U.toNumber(d[campo]) || 0); }, 0);
+    };
+    var conversaciones = suma('conversaciones');
+    var agendas = suma('agendas');
+    var objetivos = (S.settings().objetivos) || { tasaAgendaMin: 0.08, tasaAgendaMax: 0.12 };
+    var tasa = conversaciones ? agendas / conversaciones : 0;
+
+    return {
+      dias: dias, diasCargados: dias.length,
+      conversaciones: conversaciones, outbound: suma('outbound'),
+      seguimientos: suma('seguimientos'), agendas: agendas,
+      tasaAgenda: tasa,
+      objetivoMin: objetivos.tasaAgendaMin, objetivoMax: objetivos.tasaAgendaMax,
+      estado: !conversaciones ? 'Sin datos'
+        : tasa >= objetivos.tasaAgendaMax ? 'Por encima del objetivo'
+        : tasa >= objetivos.tasaAgendaMin ? 'En objetivo' : 'Por debajo del objetivo',
+      porcentajeOutbound: conversaciones ? suma('outbound') / conversaciones : 0,
+      serie: dias.slice().sort(function (a, b) { return (U.parseDate(a.fecha) || 0) - (U.parseDate(b.fecha) || 0); })
+    };
+  }
+
+  /* La fila de hoy del setter, para cargar el día desde el panel */
+  function diaDeHoy(setter) {
+    var hoy = U.today();
+    return S.allRows('setter_dia').filter(function (d) {
+      return d.fecha === hoy && (!setter || d.setter === setter);
+    })[0] || null;
+  }
+
+  /* Tareas abiertas de quien está mirando el panel */
+  function misTareas() {
+    var yo = AE.auth.usuario();
+    return S.allRows('tareas').filter(function (t) {
+      if (t.hecha) return false;
+      var asignados = Array.isArray(t.asignados) ? t.asignados : (t.asignados ? [t.asignados] : []);
+      return AE.perms.esAdmin() ? true : asignados.indexOf(yo) >= 0;
+    }).sort(function (a, b) {
+      return (U.parseDate(a.vence) || Infinity) - (U.parseDate(b.vence) || Infinity);
+    });
+  }
+
   AE.metrics = {
     calcular: calcular, serieMensual: serieMensual, proyeccion: proyeccion,
     forecast: forecast, ranking: ranking, distribucion: distribucion,
+    facturacion: facturacion, saldosPendientes: saldosPendientes,
+    topClientes: topClientes, misTareas: misTareas,
+    alumnos: alumnos, actividadSetter: actividadSetter, diaDeHoy: diaDeHoy,
     metaDe: metaDe, enPeriodo: enPeriodo
   };
 })(window.AE);

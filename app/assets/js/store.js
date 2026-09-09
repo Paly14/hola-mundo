@@ -35,17 +35,32 @@
     return base;
   }
 
+  /* Datos migrados de los trackers de Excel (app/assets/js/datos-alpha.js) */
+  function withReales() {
+    var base = blank();
+    var datos = AE.datosIniciales;
+    base.tables.forEach(function (t) { t.records = (datos[t.id] || []).slice(); });
+    if (datos.objetivos) base.settings.objetivos = datos.objetivos;
+    return base;
+  }
+
   function load() {
     var raw;
     try { raw = localStorage.getItem(KEY); } catch (e) { raw = null; }
-    if (!raw) { state = withDemo(); save(); return state; }
+    if (!raw) {
+      state = AE.datosIniciales ? withReales() : withDemo();
+      refrescarAlumnos();
+      save();
+      return state;
+    }
     try {
       state = JSON.parse(raw);
       migrate();
     } catch (e) {
       console.warn('No se pudo leer el guardado local, empiezo de cero.', e);
-      state = withDemo();
+      state = AE.datosIniciales ? withReales() : withDemo();
     }
+    refrescarAlumnos();
     return state;
   }
 
@@ -132,7 +147,9 @@
     var t = table(tableId);
     if (!t) return null;
     var rec = Object.assign({ id: U.uid('rec'), _createdAt: new Date().toISOString() }, values || {});
+    aplicarReglas(tableId, rec, rec);
     if ((opts && opts.at) === 'end') t.records.push(rec); else t.records.unshift(rec);
+    if (tableId === 'pagos') { recalcularCobro(rec.lead); recalcularAlumno(rec.alumno); }
     emit('record:create');
     return rec;
   }
@@ -140,8 +157,15 @@
   function updateRecord(tableId, recId, patch) {
     var rec = record(tableId, recId);
     if (!rec) return null;
+    var leadAnterior = tableId === 'pagos' ? rec.lead : null;
+    var alumnoAnterior = tableId === 'pagos' ? rec.alumno : null;
+    aplicarReglas(tableId, rec, patch);
     Object.assign(rec, patch);
     rec._updatedAt = new Date().toISOString();
+    if (tableId === 'pagos') {
+      recalcularCobro(leadAnterior); recalcularCobro(rec.lead);
+      recalcularAlumno(alumnoAnterior); recalcularAlumno(rec.alumno);
+    }
     emit('record:update');
     return rec;
   }
@@ -149,8 +173,97 @@
   function deleteRecord(tableId, recId) {
     var t = table(tableId);
     if (!t) return;
+    var rec = record(tableId, recId);
+    var lead = rec && tableId === 'pagos' ? rec.lead : null;
+    var alumno = rec && tableId === 'pagos' ? rec.alumno : null;
     t.records = t.records.filter(function (r) { return r.id !== recId; });
+    if (lead) recalcularCobro(lead);
+    if (alumno) recalcularAlumno(alumno);
     emit('record:delete');
+  }
+
+  /* Reglas automáticas al guardar, para no tener que tocar dos campos */
+  function aplicarReglas(tableId, rec, patch) {
+    if (tableId === 'alumnos') {
+      setTimeout(function () { recalcularAlumno(rec.id); emit('alumno'); }, 0);
+      return;
+    }
+    if (tableId !== 'tareas') return;
+    if ('hecha' in patch) {
+      if (patch.hecha) patch.estado = 'Hecha';
+      else if ((rec.estado || patch.estado) === 'Hecha') patch.estado = 'Pendiente';
+      else if (!rec.estado && !patch.estado) patch.estado = 'Pendiente';
+    } else if ('estado' in patch) {
+      patch.hecha = patch.estado === 'Hecha';
+    }
+  }
+
+  /* El cash collected de un cliente sale siempre de su historial de cobros */
+  function recalcularCobro(leadId) {
+    if (!leadId) return;
+    var lead = record('leads', leadId);
+    var tabla = table('pagos');
+    if (!lead || !tabla) return;
+    var pagos = tabla.records.filter(function (p) { return p.lead === leadId; });
+    if (!pagos.length) return;
+    lead.cash_collected = pagos.reduce(function (a, p) {
+      var monto = U.toNumber(p.monto) || 0;
+      return a + (p.tipo === 'Reembolso' ? -Math.abs(monto) : monto);
+    }, 0);
+  }
+
+  /* Un alumno: fecha de fin, días que le quedan, cuánto pagó y cuánto debe */
+  function recalcularAlumno(alumnoId) {
+    var a = record('alumnos', alumnoId);
+    if (!a) return;
+    var ingreso = U.parseDate(a.fecha_ingreso);
+    var duracion = U.toNumber(a.duracion);
+    if (ingreso && duracion) {
+      var fin = new Date(ingreso.getTime() + duracion * 86400000);
+      a.fecha_fin = fin.toISOString().slice(0, 10);
+    }
+    if (a.fecha_fin) a.dias_restantes = U.daysBetween(new Date(), a.fecha_fin);
+
+    var tabla = table('pagos');
+    var pagos = tabla ? tabla.records.filter(function (p) { return p.alumno === alumnoId; }) : [];
+    if (pagos.length) {
+      a.total_pagado = pagos.reduce(function (acc, p) {
+        var monto = U.toNumber(p.monto) || 0;
+        return acc + (p.tipo === 'Reembolso' ? -Math.abs(monto) : monto);
+      }, 0);
+    }
+    a.saldo = (U.toNumber(a.precio_total) || 0) - (U.toNumber(a.total_pagado) || 0);
+
+    if (['Baja', 'Pausado'].indexOf(a.estado) < 0 && a.dias_restantes != null) {
+      a.estado = a.dias_restantes < 0 ? 'Vencido' : (a.dias_restantes <= 15 ? 'Por vencer' : 'Activo');
+    }
+  }
+
+  /* Los días para vencer cambian solos: se recalculan al abrir la app */
+  function refrescarAlumnos() {
+    var t = table('alumnos');
+    if (!t) return;
+    t.records.forEach(function (a) { recalcularAlumno(a.id); });
+  }
+
+  function alumnoDe(leadId) {
+    var t = table('alumnos');
+    if (!t) return null;
+    return t.records.filter(function (a) { return a.lead === leadId; })[0] || null;
+  }
+
+  function pagosDe(leadId) {
+    var t = table('pagos');
+    if (!t) return [];
+    return t.records.filter(function (p) { return p.lead === leadId; })
+      .sort(function (a, b) { return (U.parseDate(b.fecha) || 0) - (U.parseDate(a.fecha) || 0); });
+  }
+
+  function cobrado(leadId) {
+    return pagosDe(leadId).reduce(function (a, p) {
+      var monto = U.toNumber(p.monto) || 0;
+      return a + (p.tipo === 'Reembolso' ? -Math.abs(monto) : monto);
+    }, 0);
   }
 
   function duplicateRecord(tableId, recId) {
@@ -338,14 +451,33 @@
     }
   }
 
-  /* Alcance por rol: un setter ve sus leads, un closer los suyos */
+  /* Alcance: cada persona ve su espacio de trabajo salvo que sea admin */
+  var REGLAS_ALCANCE = {
+    leads: function (r, yo) {
+      return r.setter === yo || r.closer === yo || (!r.setter && !r.closer);
+    },
+    actividades: function (r, yo) { return !r.responsable || r.responsable === yo; },
+    contenido: function (r, yo) { return !r.responsable || r.responsable === yo; },
+    tareas: function (r, yo) {
+      var asignados = Array.isArray(r.asignados) ? r.asignados : (r.asignados ? [r.asignados] : []);
+      return !asignados.length || asignados.indexOf(yo) >= 0 || r.creada_por === yo;
+    }
+  };
+
   function scoped(rows, tableId) {
-    var s = state.settings;
-    if (s.rol === 'Admin' || s.verTodo) return rows;
-    var map = { leads: s.rol === 'Setter' ? 'setter' : 'closer', actividades: 'responsable' };
-    var key = map[tableId];
-    if (!key || !field(tableId, key)) return rows;
-    return rows.filter(function (r) { return !r[key] || r[key] === s.usuario; });
+    if (!AE.perms || !AE.perms.soloPropios()) return rows;
+    var yo = AE.auth.usuario();
+    var regla = REGLAS_ALCANCE[tableId];
+    if (!regla) return rows;
+    return rows.filter(function (r) { return regla(r, yo); });
+  }
+
+  /* Campos que esta persona puede ver en una tabla */
+  function visibleFields(tableId) {
+    var t = table(tableId);
+    if (!t) return [];
+    var ocultos = AE.perms ? AE.perms.camposOcultos(tableId) : [];
+    return t.fields.filter(function (f) { return ocultos.indexOf(f.id) < 0; });
   }
 
   function compare(a, b, f, dir) {
@@ -441,7 +573,7 @@
 
   function exportCSV(tableId, viewId) {
     var t = table(tableId);
-    var visible = t.fields.filter(function (f) {
+    var visible = visibleFields(tableId).filter(function (f) {
       var v = viewId ? view(viewId) : null;
       return !v || (v.hidden || []).indexOf(f.id) < 0;
     });
@@ -500,7 +632,14 @@
     return rows;
   }
 
-  function resetDemo() { state = withDemo(); emit('reset'); }
+  function resetDemo() { state = withDemo(); refrescarAlumnos(); emit('reset'); }
+  function resetReales() {
+    if (!AE.datosIniciales) return false;
+    state = withReales();
+    refrescarAlumnos();
+    emit('reset');
+    return true;
+  }
 
   function clearData() {
     state.tables.forEach(function (t) { t.records = []; });
@@ -518,6 +657,9 @@
     addTable: addTable, deleteTable: deleteTable,
     addView: addView, updateView: updateView, deleteView: deleteView,
     rowsOf: rowsOf, allRows: allRows, groupRows: groupRows, titleOf: titleOf,
+    visibleFields: visibleFields, pagosDe: pagosDe, cobrado: cobrado,
+    recalcularCobro: recalcularCobro, recalcularAlumno: recalcularAlumno,
+    refrescarAlumnos: refrescarAlumnos, alumnoDe: alumnoDe, resetReales: resetReales,
     opsFor: opsFor, OP_LABELS: OP_LABELS, RANGOS: RANGOS,
     exportJSON: exportJSON, importJSON: importJSON, exportCSV: exportCSV, importCSV: importCSV,
     resetDemo: resetDemo, clearData: clearData, STORAGE_KEY: KEY

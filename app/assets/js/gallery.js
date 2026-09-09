@@ -17,10 +17,10 @@
 
     rows.forEach(function (rec) {
       var url = rec.url || '';
-      var chips = table.fields.filter(function (f) {
+      var chips = S.visibleFields(table.id).filter(function (f) {
         return ['select', 'multiselect'].indexOf(f.type) >= 0 && hidden.indexOf(f.id) < 0 && rec[f.id];
       });
-      var desc = table.fields.filter(function (f) { return f.type === 'longtext'; })[0];
+      var desc = S.visibleFields(table.id).filter(function (f) { return f.type === 'longtext'; })[0];
 
       grid.appendChild(el('article', { class: 'gcard' + (rec.destacado ? ' is-star' : '') }, [
         el('header', { class: 'gcard__head' }, [
@@ -44,9 +44,9 @@
     });
 
     grid.appendChild(el('button', {
-      class: 'gcard gcard--new', text: '+ Agregar recurso',
+      class: 'gcard gcard--new', text: '+ Agregar',
       onclick: function () {
-        var rec = S.createRecord(table.id, { para: 'Todos', categoria: 'Otros' });
+        var rec = S.createRecord(table.id, AE.defaults.para(table.id));
         AE.recordCard.open(table.id, rec.id, ctx.refresh);
       }
     }));

@@ -14,7 +14,7 @@
 
   function visibleFields(table, view) {
     var hidden = view.hidden || [];
-    return table.fields.filter(function (f) { return hidden.indexOf(f.id) < 0; });
+    return S.visibleFields(table.id).filter(function (f) { return hidden.indexOf(f.id) < 0; });
   }
 
   function render(host, viewId, ctx) {
@@ -55,10 +55,10 @@
       hr.appendChild(th);
     });
     hr.appendChild(el('th', { class: 'gh gh--add' }, [
-      el('button', {
+      AE.perms.puedeEditarEstructura() ? el('button', {
         class: 'gh__add', text: '+ Campo',
         onclick: function (e) { AE.fieldEditor.open(table.id, null, ctx.refresh, e.currentTarget); }
-      })
+      }) : null
     ]));
     thead.appendChild(hr);
     t.appendChild(thead);
@@ -75,8 +75,7 @@
           onclick: function () { collapsed[viewId + ':' + g.key] = isOpen; ctx.refresh(); }
         }, [
           el('span', { class: 'grow-group__caret', text: isOpen ? '▾' : '▸' }),
-          el('span', { class: 'grow-group__title', html: gf.type === 'select' && g.key !== '—'
-            ? F.chip(g.key, F.colorOf(gf, g.key)) : U.esc(g.key) }),
+          el('span', { class: 'grow-group__title', html: etiquetaGrupo(gf, g.key) }),
           el('span', { class: 'grow-group__count', text: g.rows.length + ' ' + (g.rows.length === 1 ? 'registro' : 'registros') }),
           el('span', { class: 'grow-group__sum', text: groupSummary(table, g.rows) })
         ]));
@@ -118,13 +117,23 @@
     renderBulkBar(host, table, ctx);
   }
 
+  /* Título de un grupo: chip si es selección, nombre del registro si es vínculo */
+  function etiquetaGrupo(f, key) {
+    if (key === '—' || key === '') return '<span class="muted">Sin dato</span>';
+    if (f.type === 'select') return F.chip(key, F.colorOf(f, key));
+    if (f.type === 'link') return U.esc(S.titleOf(f.linkTable, key) || 'Sin dato');
+    if (f.type === 'checkbox') return key === 'true' ? 'Sí' : 'No';
+    if (f.type === 'date' || f.type === 'datetime') return U.esc(F.text(f, key));
+    return U.esc(key);
+  }
+
   function sortMark(view, f) {
     var s = (view.sorts || []).filter(function (x) { return x.fieldId === f.id; })[0];
     return s ? el('span', { class: 'gh__sort', text: s.dir === 'desc' ? '↓' : '↑' }) : null;
   }
 
   function groupSummary(table, rows) {
-    var money = table.fields.filter(function (f) { return f.type === 'currency'; })[0];
+    var money = S.visibleFields(table.id).filter(function (f) { return f.type === 'currency'; })[0];
     if (!money) return '';
     var total = rows.reduce(function (acc, r) { return acc + (U.toNumber(r[money.id]) || 0); }, 0);
     return total ? money.name + ': ' + U.money(total, S.settings().currency) : '';
@@ -197,18 +206,7 @@
   }
 
   function addRow(table, ctx) {
-    var values = {};
-    if (table.id === 'leads') {
-      values.estado = 'Nuevo';
-      values.fecha_contacto = U.today();
-      if (S.settings().rol === 'Setter') values.setter = S.settings().usuario;
-      if (S.settings().rol === 'Closer') values.closer = S.settings().usuario;
-    }
-    if (table.id === 'actividades') {
-      values.fecha = new Date().toISOString().slice(0, 16);
-      values.responsable = S.settings().usuario;
-    }
-    var rec = S.createRecord(table.id, values);
+    var rec = S.createRecord(table.id, AE.defaults.para(table.id));
     sel = { recId: rec.id, fieldId: table.primary };
     ctx.refresh();
     setTimeout(function () {
@@ -269,10 +267,14 @@
     e.preventDefault();
     var startX = e.clientX, startW = f.width || 160;
     document.body.classList.add('is-resizing');
+    /* La columna se ubica por el encabezado dibujado: los campos ocultos
+       (por vista o por permisos) corren las posiciones respecto de la tabla. */
+    var encabezados = Array.prototype.slice.call(document.querySelectorAll('.grid th.gh'));
+    var idx = encabezados.map(function (th) { return th.dataset.field; }).indexOf(f.id);
+
     function move(ev) {
       var w = Math.max(80, startW + (ev.clientX - startX));
       f.width = w;
-      var idx = table.fields.indexOf(f);
       var col = document.querySelectorAll('.grid col')[idx + 1];
       if (col) col.style.width = w + 'px';
     }
@@ -299,11 +301,11 @@
         onClick: function () { S.updateView(view.id, { groupBy: view.groupBy === f.id ? null : f.id }); ctx.refresh(); } },
       { icon: '⚑', label: 'Filtrar por este campo', onClick: function () { AE.toolbar.addFilter(view.id, f.id); ctx.refresh(); } },
       { separator: true },
-      { icon: '✎', label: 'Editar campo', onClick: function () { AE.fieldEditor.open(table.id, f.id, ctx.refresh, anchor); } },
+      AE.perms.puedeEditarEstructura() ? { icon: '✎', label: 'Editar campo', onClick: function () { AE.fieldEditor.open(table.id, f.id, ctx.refresh, anchor); } } : null,
       { icon: '👁', label: 'Ocultar campo', onClick: function () {
         S.updateView(view.id, { hidden: (view.hidden || []).concat([f.id]) }); ctx.refresh();
       } },
-      table.primary === f.id ? null : {
+      (table.primary === f.id || !AE.perms.puedeEditarEstructura()) ? null : {
         icon: '🗑', label: 'Eliminar campo', danger: true,
         onClick: function () {
           AE.ui.confirm('¿Eliminar el campo "' + f.name + '" y todos sus datos?', { danger: true, ok: 'Eliminar' })

@@ -5,25 +5,69 @@
 (function (AE) {
   'use strict';
 
+  /* Situación del lead: el mismo vocabulario que usa el CRM del closer */
   var ESTADOS = [
     { name: 'Nuevo', color: '#94a3b8' },
     { name: 'Contactado', color: '#5b9dff' },
     { name: 'Calificado', color: '#38bdf8' },
     { name: 'Agendado', color: '#c084fc' },
-    { name: 'Show', color: '#f2c14e' },
     { name: 'No Show', color: '#fb7185' },
+    { name: 'Presentado', color: '#f2c14e' },
     { name: 'Seguimiento', color: '#ff9248' },
+    { name: 'Esperando pago', color: '#38bdf8' },
     { name: 'Ganado', color: '#3ec9a7' },
     { name: 'Perdido', color: '#cbd5e1' }
   ];
 
-  /* Estados que cuentan como "llamada agendada" y como "cierre" */
+  var SI_NO = [{ name: 'Sí', color: '#3ec9a7' }, { name: 'No', color: '#fb7185' }];
+
+  /* Qué estados cuentan como agenda, como show y como cierre */
   var ETAPAS = {
-    agendado: ['Agendado', 'Show', 'No Show', 'Seguimiento', 'Ganado', 'Perdido'],
-    show: ['Show', 'Seguimiento', 'Ganado'],
+    agendado: ['Agendado', 'No Show', 'Presentado', 'Seguimiento', 'Esperando pago', 'Ganado', 'Perdido'],
+    show: ['Presentado', 'Seguimiento', 'Esperando pago', 'Ganado'],
     ganado: ['Ganado'],
     perdido: ['Perdido', 'No Show'],
-    abierto: ['Nuevo', 'Contactado', 'Calificado', 'Agendado', 'Show', 'Seguimiento']
+    abierto: ['Nuevo', 'Contactado', 'Calificado', 'Agendado', 'Presentado', 'Seguimiento', 'Esperando pago']
+  };
+
+  /* Roles del equipo. Dueño y Admin ven y editan todo, incluida la facturación. */
+  var ROLES = [
+    { name: 'Dueño', color: '#ff9248' },
+    { name: 'Admin', color: '#f57f2e' },
+    { name: 'Setter', color: '#5b9dff' },
+    { name: 'Closer', color: '#3ec9a7' },
+    { name: 'Editor', color: '#c084fc' }
+  ];
+
+  /**
+   * Qué ve cada rol.
+   *   tablas  : '*' (todas) o la lista de tablas a las que entra
+   *   ocultos : campos que no ve dentro de cada tabla
+   *   propios : true = sólo sus registros (sus leads, sus tareas)
+   *   admin   : puede editar la estructura, el equipo y la facturación
+   */
+  var PERMISOS = {
+    'Dueño': { tablas: '*', ocultos: {}, propios: false, admin: true },
+    'Admin': { tablas: '*', ocultos: {}, propios: false, admin: true },
+    'Setter': {
+      tablas: ['leads', 'actividades', 'setter_dia', 'tareas', 'recursos'],
+      ocultos: { leads: ['cash_collected', 'precio', 'oferta', 'objecion', 'grabacion'] },
+      propios: true, admin: false
+    },
+    'Closer': {
+      tablas: ['leads', 'actividades', 'alumnos', 'tareas', 'recursos'],
+      /* El closer ve quién es alumno, pero la plata queda para Dueño y Admin */
+      ocultos: {
+        leads: ['cash_collected'],
+        alumnos: ['precio_total', 'total_pagado', 'saldo', 'proxima_cuota',
+          'modalidad', 'comprobantes']
+      },
+      propios: true, admin: false
+    },
+    'Editor': {
+      tablas: ['contenido', 'tareas', 'recursos'],
+      ocultos: {}, propios: true, admin: false
+    }
   };
 
   function field(id, name, type, extra) {
@@ -38,11 +82,12 @@
         field('telefono', 'WhatsApp', 'phone', { width: 150 }),
         field('email', 'Email', 'email', { width: 200 }),
         field('instagram', 'Instagram', 'text', { width: 140 }),
-        field('origen', 'Origen', 'select', {
+        field('origen', 'Fuente', 'select', {
           width: 130,
           options: [
-            { name: 'Instagram' }, { name: 'TikTok' }, { name: 'YouTube' },
-            { name: 'Referido' }, { name: 'Ads' }, { name: 'Orgánico' }, { name: 'Otro' }
+            { name: 'Ads' }, { name: 'Producto' }, { name: 'Setter 1' }, { name: 'Setter 2' },
+            { name: 'Manychat' }, { name: 'Orgánico' }, { name: 'Referido' },
+            { name: 'Instagram' }, { name: 'TikTok' }, { name: 'YouTube' }
           ]
         }),
         field('estado', 'Estado', 'select', { width: 130, options: ESTADOS }),
@@ -66,6 +111,15 @@
         field('interes', 'Interés', 'rating', { width: 120 }),
         field('proximo_paso', 'Próximo paso', 'text', { width: 200 }),
         field('fecha_proximo_paso', 'Fecha próximo paso', 'date', { width: 165 }),
+        field('se_presento', '¿Se presentó?', 'select', { width: 130, options: SI_NO }),
+        field('calificaba', '¿Calificaba?', 'select', { width: 130, options: SI_NO }),
+        field('pago_llamada', 'Pagó en la llamada', 'currency', { width: 160 }),
+        field('pago_seguimiento', 'Pagó en seguimiento', 'currency', { width: 170 }),
+        field('reagenda', 'Reagenda', 'datetime', { width: 160 }),
+        field('presento_reagenda', '¿Fue a la reagenda?', 'select', { width: 165, options: SI_NO }),
+        field('contexto', 'Contexto previo', 'longtext', { width: 240 }),
+        field('sensacion', '¿Cómo salió la call?', 'longtext', { width: 260 }),
+        field('manychat', 'URL de Manychat', 'url', { width: 170 }),
         field('objecion', 'Objeción', 'select', {
           width: 150,
           options: [
@@ -73,7 +127,7 @@
             { name: 'Confianza' }, { name: 'No es prioridad' }, { name: 'Sin objeción' }
           ]
         }),
-        field('grabacion', 'Grabación', 'url', { width: 170 }),
+        field('grabacion', 'Link de Fathom', 'url', { width: 170 }),
         field('notas', 'Notas', 'longtext', { width: 260 })
       ]
     },
@@ -127,14 +181,175 @@
       id: 'equipo', name: 'Equipo', icon: '👥', primary: 'nombre',
       fields: [
         field('nombre', 'Nombre', 'text', { width: 180 }),
-        field('rol', 'Rol', 'select', {
-          width: 120,
-          options: [{ name: 'Setter' }, { name: 'Closer' }, { name: 'Admin' }]
-        }),
+        field('rol', 'Rol', 'select', { width: 120, options: ROLES }),
         field('email', 'Email', 'email', { width: 210 }),
         field('meta_cash', 'Meta cash / mes', 'currency', { width: 150 }),
         field('comision', 'Comisión', 'percent', { width: 120 }),
         field('activo', 'Activo', 'checkbox', { width: 100 })
+      ]
+    },
+    {
+      id: 'pagos', name: 'Facturación', icon: '💵', primary: 'concepto',
+      fields: [
+        field('concepto', 'Concepto', 'text', { width: 210 }),
+        field('alumno', 'Alumno', 'link', { width: 180, linkTable: 'alumnos' }),
+        field('lead', 'Lead', 'link', { width: 170, linkTable: 'leads' }),
+        field('fecha', 'Fecha de cobro', 'date', { width: 140 }),
+        field('cuota', 'Cuota N°', 'number', { width: 100 }),
+        field('monto', 'Monto', 'currency', { width: 130 }),
+        field('tipo', 'Tipo', 'select', {
+          width: 140,
+          options: [
+            { name: 'Pago inicial', color: '#3ec9a7' }, { name: 'Cuota', color: '#5b9dff' },
+            { name: 'Pago total', color: '#ff9248' }, { name: 'Reembolso', color: '#fb7185' }
+          ]
+        }),
+        field('metodo', 'Método', 'select', {
+          width: 150,
+          options: [
+            { name: 'Transferencia' }, { name: 'Mercado Pago' }, { name: 'Stripe' },
+            { name: 'PayPal' }, { name: 'Efectivo' }, { name: 'Cripto' }
+          ]
+        }),
+        field('closer', 'Closer', 'select', {
+          width: 130, options: [],
+          optionsFrom: { table: 'equipo', field: 'nombre', where: { rol: 'Closer' } }
+        }),
+        field('factura', 'Factura / comprobante', 'url', { width: 180 }),
+        field('notas', 'Notas', 'longtext', { width: 240 })
+      ]
+    },
+    {
+      id: 'alumnos', name: 'Alumnos', icon: '🎓', primary: 'nombre',
+      fields: [
+        field('nombre', 'Nombre completo', 'text', { width: 200 }),
+        field('email', 'Email', 'email', { width: 200 }),
+        field('telefono', 'Teléfono', 'phone', { width: 150 }),
+        field('programa', 'Programa', 'select', {
+          width: 170,
+          options: [
+            { name: 'Programa Completo', color: '#ff9248' }, { name: 'Mentoría 1:1', color: '#c084fc' },
+            { name: 'Acompañamiento', color: '#5b9dff' }, { name: 'Downsell', color: '#94a3b8' }
+          ]
+        }),
+        field('estado', 'Estado', 'select', {
+          width: 130,
+          options: [
+            { name: 'Activo', color: '#3ec9a7' }, { name: 'Por vencer', color: '#f2c14e' },
+            { name: 'Vencido', color: '#fb7185' }, { name: 'Pausado', color: '#94a3b8' },
+            { name: 'Baja', color: '#cbd5e1' }
+          ]
+        }),
+        field('fecha_ingreso', 'Fecha de ingreso', 'date', { width: 150 }),
+        field('duracion', 'Duración (días)', 'number', { width: 140 }),
+        field('fecha_fin', 'Fecha de finalización', 'date', { width: 165, calculado: true }),
+        field('dias_restantes', 'Días para vencer', 'number', { width: 145, calculado: true }),
+        field('modalidad', 'Modalidad de pago', 'select', {
+          width: 160,
+          options: [{ name: 'Pago completo' }, { name: 'Plan de cuotas' }]
+        }),
+        field('precio_total', 'Precio total', 'currency', { width: 140 }),
+        field('total_pagado', 'Total pagado', 'currency', { width: 140, calculado: true }),
+        field('saldo', 'Saldo pendiente', 'currency', { width: 150, calculado: true }),
+        field('proxima_cuota', 'Próxima cuota', 'date', { width: 145 }),
+        field('lead', 'Lead de origen', 'link', { width: 180, linkTable: 'leads' }),
+        field('comprobantes', 'Comprobantes', 'url', { width: 160 }),
+        field('resultados', 'Resultados / avances', 'longtext', { width: 260 }),
+        field('caso_exito', '¿Caso de éxito?', 'checkbox', { width: 130 })
+      ]
+    },
+    {
+      id: 'setter_dia', name: 'Actividad diaria', icon: '📆', primary: 'fecha',
+      fields: [
+        field('fecha', 'Fecha', 'date', { width: 130 }),
+        field('setter', 'Setter', 'select', {
+          width: 140, options: [],
+          optionsFrom: { table: 'equipo', field: 'nombre', where: { rol: 'Setter' } }
+        }),
+        field('conversaciones', 'Conversaciones nuevas', 'number', { width: 180 }),
+        field('outbound', 'Contactos outbound (frío)', 'number', { width: 195 }),
+        field('seguimientos', 'Seguimientos hechos', 'number', { width: 175 }),
+        field('agendas', 'Agendas nuevas', 'number', { width: 150 }),
+        field('pendientes', 'Pendientes de agendar', 'number', { width: 180 }),
+        field('notas', 'Notas', 'text', { width: 220 })
+      ]
+    },
+    {
+      id: 'contenido', name: 'Contenido y guiones', icon: '🎬', primary: 'titulo',
+      fields: [
+        field('titulo', 'Título', 'text', { width: 220 }),
+        field('formato', 'Formato', 'select', {
+          width: 130,
+          options: [
+            { name: 'Reel' }, { name: 'Short' }, { name: 'Carrusel' }, { name: 'Historia' },
+            { name: 'VSL' }, { name: 'Email' }, { name: 'Podcast' }
+          ]
+        }),
+        field('pilar', 'Pilar', 'select', {
+          width: 150,
+          options: [
+            { name: 'Autoridad' }, { name: 'Educativo' }, { name: 'Testimonio' },
+            { name: 'Oferta' }, { name: 'Detrás de escena' }
+          ]
+        }),
+        field('estado', 'Estado', 'select', {
+          width: 130,
+          options: [
+            { name: 'Idea', color: '#94a3b8' }, { name: 'Guion', color: '#5b9dff' },
+            { name: 'Grabar', color: '#c084fc' }, { name: 'Editar', color: '#f2c14e' },
+            { name: 'Programado', color: '#ff9248' }, { name: 'Publicado', color: '#3ec9a7' }
+          ]
+        }),
+        field('gancho', 'Gancho (primeros 3 seg)', 'text', { width: 260 }),
+        field('guion', 'Guion', 'longtext', { width: 320 }),
+        field('cta', 'Llamado a la acción', 'text', { width: 200 }),
+        field('responsable', 'Responsable', 'select', {
+          width: 140, options: [],
+          optionsFrom: { table: 'equipo', field: 'nombre' }
+        }),
+        field('fecha_publicacion', 'Fecha de publicación', 'date', { width: 165 }),
+        field('referencia', 'Referencia', 'url', { width: 170 }),
+        field('link_publicado', 'Link publicado', 'url', { width: 170 }),
+        field('notas', 'Notas', 'longtext', { width: 240 })
+      ]
+    },
+    {
+      id: 'tareas', name: 'Tareas', icon: '✅', primary: 'titulo',
+      fields: [
+        field('hecha', 'Hecha', 'checkbox', { width: 80 }),
+        field('titulo', 'Tarea', 'text', { width: 280 }),
+        field('asignados', 'Asignada a', 'multiselect', {
+          width: 190, options: [],
+          optionsFrom: { table: 'equipo', field: 'nombre' }
+        }),
+        field('estado', 'Estado', 'select', {
+          width: 130,
+          options: [
+            { name: 'Pendiente', color: '#94a3b8' }, { name: 'En curso', color: '#5b9dff' },
+            { name: 'Bloqueada', color: '#fb7185' }, { name: 'Hecha', color: '#3ec9a7' }
+          ]
+        }),
+        field('prioridad', 'Prioridad', 'select', {
+          width: 120,
+          options: [
+            { name: 'Alta', color: '#fb7185' }, { name: 'Media', color: '#f2c14e' },
+            { name: 'Baja', color: '#94a3b8' }
+          ]
+        }),
+        field('area', 'Área', 'select', {
+          width: 140,
+          options: [
+            { name: 'Ventas' }, { name: 'Contenido' }, { name: 'Operaciones' },
+            { name: 'Administración' }, { name: 'Personal' }
+          ]
+        }),
+        field('vence', 'Vence', 'date', { width: 130 }),
+        field('lead', 'Cliente relacionado', 'link', { width: 180, linkTable: 'leads' }),
+        field('detalle', 'Detalle', 'longtext', { width: 300 }),
+        field('creada_por', 'Creada por', 'select', {
+          width: 140, options: [],
+          optionsFrom: { table: 'equipo', field: 'nombre' }
+        })
       ]
     },
     {
@@ -161,18 +376,22 @@
     { id: 'v_leads_all', tableId: 'leads', name: 'Todos los leads', type: 'grid', filters: [], sorts: [{ fieldId: 'fecha_contacto', dir: 'desc' }], hidden: [] },
     {
       id: 'v_setter', tableId: 'leads', name: 'Panel Setter', type: 'grid',
-      filters: [{ fieldId: 'estado', op: 'isAnyOf', value: ['Nuevo', 'Contactado', 'Calificado', 'Agendado'] }],
+      roles: ['Setter', 'Dueño', 'Admin'],
+      filters: [{ fieldId: 'estado', op: 'isAnyOf', value: ['Nuevo', 'Contactado', 'Calificado', 'Agendado', 'No Show'] }],
       sorts: [{ fieldId: 'fecha_proximo_paso', dir: 'asc' }],
-      hidden: ['cash_collected', 'objecion', 'grabacion', 'oferta']
+      hidden: ['cash_collected', 'objecion', 'grabacion', 'oferta', 'pago_llamada',
+        'pago_seguimiento', 'sensacion', 'presento_reagenda']
     },
     {
       id: 'v_closer', tableId: 'leads', name: 'Panel Closer', type: 'grid',
-      filters: [{ fieldId: 'estado', op: 'isAnyOf', value: ['Agendado', 'Show', 'Seguimiento', 'Ganado'] }],
+      roles: ['Closer', 'Dueño', 'Admin'],
+      filters: [{ fieldId: 'estado', op: 'isAnyOf', value: ['Agendado', 'Presentado', 'Seguimiento', 'Esperando pago', 'Ganado'] }],
       sorts: [{ fieldId: 'fecha_llamada', dir: 'asc' }],
-      hidden: ['instagram', 'origen', 'email']
+      hidden: ['instagram', 'email', 'contexto', 'manychat']
     },
     {
       id: 'v_cierres', tableId: 'leads', name: 'Cierres', type: 'grid',
+      roles: ['Closer', 'Dueño', 'Admin'],
       filters: [{ fieldId: 'estado', op: 'is', value: 'Ganado' }],
       sorts: [{ fieldId: 'fecha_llamada', dir: 'desc' }],
       groupBy: 'closer', hidden: ['probabilidad', 'proximo_paso', 'fecha_proximo_paso', 'objecion']
@@ -180,6 +399,61 @@
     { id: 'v_actividades', tableId: 'actividades', name: 'Actividad reciente', type: 'grid', filters: [], sorts: [{ fieldId: 'fecha', dir: 'desc' }], hidden: [] },
     { id: 'v_recursos', tableId: 'recursos', name: 'Biblioteca', type: 'gallery', filters: [], sorts: [], hidden: [] },
     { id: 'v_recursos_grid', tableId: 'recursos', name: 'Tabla de recursos', type: 'grid', filters: [], sorts: [], hidden: [] },
+    {
+      id: 'v_pagos', tableId: 'pagos', name: 'Cobros', type: 'grid',
+      filters: [], sorts: [{ fieldId: 'fecha', dir: 'desc' }], hidden: []
+    },
+    {
+      id: 'v_pagos_cliente', tableId: 'pagos', name: 'Historial por cliente', type: 'grid',
+      filters: [], sorts: [{ fieldId: 'fecha', dir: 'desc' }], groupBy: 'lead', hidden: ['notas', 'closer']
+    },
+    {
+      id: 'v_alumnos', tableId: 'alumnos', name: 'Alumnos activos', type: 'grid',
+      filters: [{ fieldId: 'estado', op: 'isAnyOf', value: ['Activo', 'Por vencer'] }],
+      sorts: [{ fieldId: 'dias_restantes', dir: 'asc' }],
+      hidden: ['resultados', 'comprobantes', 'lead']
+    },
+    {
+      id: 'v_alumnos_todos', tableId: 'alumnos', name: 'Todos los alumnos', type: 'grid',
+      filters: [], sorts: [{ fieldId: 'fecha_ingreso', dir: 'desc' }], hidden: []
+    },
+    {
+      id: 'v_alumnos_cobros', tableId: 'alumnos', name: 'Cobranzas', type: 'grid',
+      roles: ['Dueño', 'Admin'],
+      filters: [{ fieldId: 'saldo', op: '>', value: 0 }],
+      sorts: [{ fieldId: 'proxima_cuota', dir: 'asc' }],
+      hidden: ['resultados', 'duracion', 'fecha_fin', 'email', 'caso_exito']
+    },
+    {
+      id: 'v_setter_dia', tableId: 'setter_dia', name: 'Carga diaria', type: 'grid',
+      filters: [], sorts: [{ fieldId: 'fecha', dir: 'desc' }], hidden: []
+    },
+    {
+      id: 'v_contenido_prod', tableId: 'contenido', name: 'Producción', type: 'kanban',
+      stackBy: 'estado', filters: [], sorts: [],
+      hidden: ['guion', 'notas', 'referencia', 'link_publicado', 'cta']
+    },
+    {
+      id: 'v_contenido_guiones', tableId: 'contenido', name: 'Banco de guiones', type: 'gallery',
+      filters: [], sorts: [], hidden: ['notas', 'referencia']
+    },
+    {
+      id: 'v_contenido_cal', tableId: 'contenido', name: 'Calendario', type: 'grid',
+      filters: [], sorts: [{ fieldId: 'fecha_publicacion', dir: 'asc' }], hidden: ['guion', 'notas']
+    },
+    {
+      id: 'v_tareas_mias', tableId: 'tareas', name: 'Mis tareas', type: 'grid',
+      filters: [{ fieldId: 'hecha', op: 'is', value: false }],
+      sorts: [{ fieldId: 'vence', dir: 'asc' }], hidden: ['detalle', 'creada_por']
+    },
+    {
+      id: 'v_tareas_tablero', tableId: 'tareas', name: 'Tablero', type: 'kanban',
+      stackBy: 'estado', filters: [], sorts: [], hidden: ['detalle', 'creada_por', 'hecha']
+    },
+    {
+      id: 'v_tareas_todas', tableId: 'tareas', name: 'Todas las tareas', type: 'grid',
+      filters: [], sorts: [{ fieldId: 'vence', dir: 'asc' }], hidden: []
+    },
     { id: 'v_equipo', tableId: 'equipo', name: 'Equipo', type: 'grid', filters: [], sorts: [], hidden: [] },
     { id: 'v_metas', tableId: 'metas', name: 'Metas por mes', type: 'grid', filters: [], sorts: [{ fieldId: 'mes', dir: 'desc' }], hidden: [] }
   ];
@@ -187,13 +461,16 @@
   AE.schema = {
     ESTADOS: ESTADOS,
     ETAPAS: ETAPAS,
+    ROLES: ROLES,
+    PERMISOS: PERMISOS,
     tables: TABLES,
     views: VIEWS,
     settings: {
       brand: 'Alpha Ecommerce',
       currency: 'USD',
-      usuario: 'Admin',
-      rol: 'Admin',
+      permisos: PERMISOS,
+      /* Objetivo de tasa de agenda del setter (agendas / conversaciones) */
+      objetivos: { tasaAgendaMin: 0.08, tasaAgendaMax: 0.12 },
       cloud: { url: '', key: '', enabled: false }
     }
   };

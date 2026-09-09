@@ -9,6 +9,7 @@
   function render(host, viewId, ctx) {
     var view = S.view(viewId);
     var table = S.table(view.tableId);
+    var campos = S.visibleFields(table.id);
     host.innerHTML = '';
 
     var bar = el('div', { class: 'toolbar' }, [
@@ -24,21 +25,15 @@
         onclick: function (e) {
           AE.ui.menu(e.currentTarget, [
             { icon: '📄', label: 'CSV de esta vista', onClick: function () { S.exportCSV(table.id, view.id); } },
-            { icon: '🗃', label: 'Copia de seguridad (JSON)', onClick: function () { S.exportJSON(); } },
-            { icon: '📥', label: 'Importar CSV a esta tabla', onClick: function () { importCSV(table.id, ctx); } }
+            AE.perms.esAdmin() ? { icon: '🗃', label: 'Copia de seguridad (JSON)', onClick: function () { S.exportJSON(); } } : null,
+            AE.perms.esAdmin() ? { icon: '📥', label: 'Importar CSV a esta tabla', onClick: function () { importCSV(table.id, ctx); } } : null
           ], { align: 'right' });
         }
       }),
       el('button', {
         class: 'tbtn tbtn--primary', text: '+ Registro',
         onclick: function () {
-          var values = {};
-          if (table.id === 'leads') {
-            values.estado = 'Nuevo';
-            values.fecha_contacto = U.today();
-            if (S.settings().rol !== 'Admin') values[S.settings().rol === 'Setter' ? 'setter' : 'closer'] = S.settings().usuario;
-          }
-          var rec = S.createRecord(table.id, values);
+          var rec = S.createRecord(table.id, AE.defaults.para(table.id));
           AE.recordCard.open(table.id, rec.id, ctx.refresh);
         }
       })
@@ -92,10 +87,10 @@
       if (!filters.length) box.appendChild(el('p', { class: 'muted small', text: 'Sin filtros: se ven todos los registros.' }));
 
       filters.forEach(function (flt, i) {
-        var f = S.field(table.id, flt.fieldId) || table.fields[0];
+        var f = S.field(table.id, flt.fieldId) || campos[0];
 
         var fieldSel = el('select', { class: 'inp inp--sm' });
-        table.fields.forEach(function (x) {
+        S.visibleFields(table.id).forEach(function (x) {
           fieldSel.appendChild(el('option', { value: x.id, text: x.name, selected: x.id === flt.fieldId }));
         });
         fieldSel.addEventListener('change', function () {
@@ -128,7 +123,7 @@
       box.appendChild(el('div', { class: 'pop-panel__foot' }, [
         el('button', {
           class: 'btn2', text: '+ Agregar filtro',
-          onclick: function () { addFilter(view.id, table.fields[0].id); draw(); ctx.refresh(); }
+          onclick: function () { addFilter(view.id, campos[0].id); draw(); ctx.refresh(); }
         }),
         filters.length ? el('button', {
           class: 'btn2', text: 'Borrar todos',
@@ -221,7 +216,7 @@
       box.appendChild(el('div', { class: 'pop-panel__title', text: 'Ordenar por' }));
       (view.sorts || []).forEach(function (s, i) {
         var fieldSel = el('select', { class: 'inp inp--sm' });
-        table.fields.forEach(function (x) {
+        S.visibleFields(table.id).forEach(function (x) {
           fieldSel.appendChild(el('option', { value: x.id, text: x.name, selected: x.id === s.fieldId }));
         });
         fieldSel.addEventListener('change', function () { s.fieldId = fieldSel.value; S.emit('sort'); ctx.refresh(); });
@@ -244,7 +239,7 @@
         class: 'btn2', text: '+ Agregar orden',
         onclick: function () {
           view.sorts = view.sorts || [];
-          view.sorts.push({ fieldId: table.fields[0].id, dir: 'asc' });
+          view.sorts.push({ fieldId: S.visibleFields(table.id)[0].id, dir: 'asc' });
           S.emit('sort'); draw(); ctx.refresh();
         }
       }));
@@ -257,8 +252,8 @@
 
   function groupPop(anchor, view, table, ctx) {
     var items = [{ label: 'Sin agrupar', active: !view.groupBy, onClick: function () { S.updateView(view.id, { groupBy: null }); ctx.refresh(); } }];
-    table.fields.filter(function (f) {
-      return ['select', 'checkbox', 'text', 'date'].indexOf(f.type) >= 0;
+    S.visibleFields(table.id).filter(function (f) {
+      return ['select', 'checkbox', 'text', 'date', 'link'].indexOf(f.type) >= 0;
     }).forEach(function (f) {
       items.push({
         label: f.name, active: view.groupBy === f.id,
@@ -273,7 +268,7 @@
   function fieldsPop(anchor, view, table, ctx) {
     var box = el('div', { class: 'pop-panel' });
     box.appendChild(el('div', { class: 'pop-panel__title', text: 'Campos visibles' }));
-    table.fields.forEach(function (f) {
+    S.visibleFields(table.id).forEach(function (f) {
       var hidden = (view.hidden || []).indexOf(f.id) >= 0;
       var row = el('label', { class: 'fswitch' }, [
         el('input', {

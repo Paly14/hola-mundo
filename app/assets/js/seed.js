@@ -41,12 +41,21 @@
 
   function build() {
     var rand = rng(20260909);
+    /* La clave se guarda hasheada; la inicial es el nombre en minúscula. */
+    function persona(nombre, rol, email, meta, comision, clave) {
+      return {
+        id: U.uid('rec'), nombre: nombre, rol: rol, email: email,
+        meta_cash: meta, comision: comision, activo: true,
+        clave: U.sha256(clave), claveInicial: true
+      };
+    }
     var equipo = [
-      { id: U.uid('rec'), nombre: 'Lucas Giménez', rol: 'Setter', email: 'lucas@alphaecommerce.com', meta_cash: 0, comision: 5, activo: true },
-      { id: U.uid('rec'), nombre: 'Ana Moretti', rol: 'Setter', email: 'ana@alphaecommerce.com', meta_cash: 0, comision: 5, activo: true },
-      { id: U.uid('rec'), nombre: 'Diego Ramos', rol: 'Closer', email: 'diego@alphaecommerce.com', meta_cash: 25000, comision: 10, activo: true },
-      { id: U.uid('rec'), nombre: 'Sol Ferreyra', rol: 'Closer', email: 'sol@alphaecommerce.com', meta_cash: 20000, comision: 10, activo: true },
-      { id: U.uid('rec'), nombre: 'Admin', rol: 'Admin', email: 'hola@alphaecommerce.com', meta_cash: 0, comision: 0, activo: true }
+      persona('Mariano', 'Dueño', 'mariano@alphaecommerce.com', 0, 0, 'mariano'),
+      persona('Admin', 'Admin', 'hola@alphaecommerce.com', 0, 0, 'admin'),
+      persona('Lucas Giménez', 'Setter', 'lucas@alphaecommerce.com', 0, 5, 'lucas'),
+      persona('Ana Moretti', 'Setter', 'ana@alphaecommerce.com', 0, 5, 'ana'),
+      persona('Diego Ramos', 'Closer', 'diego@alphaecommerce.com', 25000, 10, 'diego'),
+      persona('Sol Ferreyra', 'Closer', 'sol@alphaecommerce.com', 20000, 10, 'sol')
     ];
     var setters = ['Lucas Giménez', 'Ana Moretti'];
     var closers = ['Diego Ramos', 'Sol Ferreyra'];
@@ -149,7 +158,105 @@
       { id: U.uid('rec'), mes: U.addMonths(mesActual, 1), meta_cash: 55000, meta_leads: 190, meta_agendas: 78, meta_cierres: 22, nota: 'Proyectado' }
     ];
 
-    return { leads: leads, actividades: actividades, recursos: recursos, equipo: equipo, metas: metas };
+    /* ---- Facturación: cada lead ganado deja su historial de cobros ---- */
+    var pagos = [];
+    leads.filter(function (l) { return l.estado === 'Ganado' && l.cash_collected; }).forEach(function (l) {
+      var total = l.cash_collected;
+      var completo = total >= (l.precio || 0);
+      var fecha = (l.fecha_llamada || l.fecha_contacto || '').slice(0, 10);
+      var metodo = ['Transferencia', 'Mercado Pago', 'Stripe', 'PayPal'][Math.floor(rand() * 4)];
+      if (completo) {
+        pagos.push({
+          id: U.uid('rec'), concepto: 'Pago total — ' + l.nombre, lead: l.id, fecha: fecha,
+          monto: total, tipo: 'Pago total', metodo: metodo, closer: l.closer, factura: '', notas: ''
+        });
+      } else {
+        var inicial = Math.round(total * 0.6);
+        pagos.push({
+          id: U.uid('rec'), concepto: 'Pago inicial — ' + l.nombre, lead: l.id, fecha: fecha,
+          monto: inicial, tipo: 'Pago inicial', metodo: metodo, closer: l.closer, factura: '', notas: ''
+        });
+        pagos.push({
+          id: U.uid('rec'), concepto: 'Cuota 1 — ' + l.nombre, lead: l.id,
+          fecha: isoDaysAgo(Math.max(0, (U.daysBetween(fecha, new Date()) || 0) - 15)),
+          monto: total - inicial, tipo: 'Cuota', metodo: metodo, closer: l.closer, factura: '', notas: ''
+        });
+      }
+    });
+
+    /* ---- Contenido y guiones (espacio de Mariano) ---- */
+    var contenido = [
+      {
+        id: U.uid('rec'), titulo: 'El error #1 al lanzar una tienda', formato: 'Reel', pilar: 'Educativo',
+        estado: 'Publicado', gancho: 'El 90% de las tiendas que fracasan cometen ESTE error en la semana 1.',
+        guion: 'GANCHO (0-3s): "El 90% de las tiendas que fracasan cometen este error en la semana 1."\n\nDESARROLLO (3-25s): Eligen el producto por gusto propio y no por demanda. Mostrar en pantalla cómo validar demanda en 10 minutos.\n\nPRUEBA (25-40s): Caso real: alumno que cambió de producto y pasó de 0 a 4.000 USD en 30 días.\n\nCIERRE (40-50s): "Si querés que revisemos tu producto, escribime ALPHA por DM."',
+        cta: 'Escribime ALPHA por DM', responsable: 'Mariano',
+        fecha_publicacion: isoDaysAgo(12), referencia: '', link_publicado: '', notas: ''
+      },
+      {
+        id: U.uid('rec'), titulo: 'Testimonio Jona: de 0 a 10k', formato: 'Reel', pilar: 'Testimonio',
+        estado: 'Editar', gancho: 'Empezó sin saber nada de ecommerce y hoy factura 10k por mes.',
+        guion: 'GANCHO: clip de Jona diciendo la cifra.\n\nCONTEXTO: dónde estaba antes (trabajo fijo, cero experiencia).\n\nPROCESO: los 3 pasos que siguió.\n\nRESULTADO + CTA: "Mirá el caso completo en el link."',
+        cta: 'Caso completo en el link', responsable: 'Mariano',
+        fecha_publicacion: isoDaysAgo(-3), referencia: '', link_publicado: '', notas: 'Cortar a 45 seg máximo.'
+      },
+      {
+        id: U.uid('rec'), titulo: '3 productos que YO no vendería en 2026', formato: 'Reel', pilar: 'Autoridad',
+        estado: 'Grabar', gancho: 'Tres productos que están de moda y que yo no tocaría ni con un palo.',
+        guion: 'GANCHO fuerte con lista en pantalla.\n\n1. Producto saturado por ads.\n2. Producto con logística imposible.\n3. Producto sin recompra.\n\nCIERRE: qué mirar en su lugar (margen, recompra, envío).',
+        cta: 'Comentá "LISTA" y te paso los criterios', responsable: 'Mariano',
+        fecha_publicacion: isoDaysAgo(-6), referencia: '', link_publicado: '', notas: ''
+      },
+      {
+        id: U.uid('rec'), titulo: 'Detrás de escena: revisando cuentas de alumnos', formato: 'Historia',
+        pilar: 'Detrás de escena', estado: 'Idea',
+        gancho: 'Un martes cualquiera revisando 12 cuentas.', guion: '',
+        cta: 'Sumate a la próxima revisión', responsable: 'Mariano',
+        fecha_publicacion: '', referencia: '', link_publicado: '', notas: ''
+      },
+      {
+        id: U.uid('rec'), titulo: 'Carrusel: checklist de las primeras 48hs', formato: 'Carrusel',
+        pilar: 'Educativo', estado: 'Guion',
+        gancho: 'Las 7 cosas que tenés que tener listas antes de gastar el primer peso en ads.',
+        guion: 'Slide 1: gancho.\nSlide 2-8: un ítem por slide.\nSlide 9: CTA a la llamada.',
+        cta: 'Agendá tu diagnóstico gratis', responsable: 'Mariano',
+        fecha_publicacion: isoDaysAgo(-9), referencia: '', link_publicado: '', notas: ''
+      },
+      {
+        id: U.uid('rec'), titulo: 'Oferta: cierre de cupos del mes', formato: 'Reel', pilar: 'Oferta',
+        estado: 'Programado', gancho: 'Quedan 4 lugares y después cerramos hasta el mes que viene.',
+        guion: 'GANCHO: escasez real.\nQUÉ INCLUYE: 3 bullets.\nPARA QUIÉN ES / PARA QUIÉN NO.\nCTA con urgencia.',
+        cta: 'Link en bio para aplicar', responsable: 'Mariano',
+        fecha_publicacion: isoDaysAgo(-1), referencia: '', link_publicado: '', notas: ''
+      }
+    ];
+
+    /* ---- Tareas del equipo ---- */
+    function tarea(titulo, asignados, estado, prioridad, area, dias, detalle) {
+      return {
+        id: U.uid('rec'), titulo: titulo, asignados: asignados,
+        estado: estado, hecha: estado === 'Hecha', prioridad: prioridad, area: area,
+        vence: isoDaysAgo(-dias), lead: '', detalle: detalle || '', creada_por: 'Mariano'
+      };
+    }
+    var tareas = [
+      tarea('Llamar a los no-show de la semana', ['Ana Moretti'], 'Pendiente', 'Alta', 'Ventas', 1, 'Reagendar antes del viernes.'),
+      tarea('Cargar los leads del último lanzamiento', ['Lucas Giménez'], 'En curso', 'Alta', 'Ventas', 2, ''),
+      tarea('Revisar grabaciones de llamadas perdidas', ['Diego Ramos'], 'Pendiente', 'Media', 'Ventas', 4, 'Buscar el patrón de objeción.'),
+      tarea('Actualizar el script de cierre con las nuevas objeciones', ['Sol Ferreyra', 'Diego Ramos'], 'Pendiente', 'Media', 'Ventas', 6, ''),
+      tarea('Grabar los 3 reels de la semana', ['Mariano'], 'En curso', 'Alta', 'Contenido', 3, 'Bloque de grabación el jueves.'),
+      tarea('Escribir guion del carrusel de checklist', ['Mariano'], 'Hecha', 'Media', 'Contenido', -2, ''),
+      tarea('Conciliar los cobros del mes', ['Admin'], 'Pendiente', 'Alta', 'Administración', 5, 'Cruzar con la tabla Facturación.'),
+      tarea('Pagar comisiones de closers', ['Admin', 'Mariano'], 'Pendiente', 'Alta', 'Administración', 8, ''),
+      tarea('Armar el onboarding de los clientes nuevos', ['Ana Moretti'], 'Bloqueada', 'Media', 'Operaciones', 7, 'Falta definir el acceso al aula.'),
+      tarea('Subir los contratos firmados a la carpeta', ['Sol Ferreyra'], 'Hecha', 'Baja', 'Operaciones', -4, ''),
+      tarea('Definir la meta de cash del mes que viene', ['Mariano', 'Admin'], 'Pendiente', 'Media', 'Administración', 10, '')
+    ];
+
+    return {
+      leads: leads, actividades: actividades, recursos: recursos, equipo: equipo,
+      metas: metas, pagos: pagos, contenido: contenido, tareas: tareas
+    };
   }
 
   AE.seed = { build: build, miembros: null };

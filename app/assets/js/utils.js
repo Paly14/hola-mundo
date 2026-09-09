@@ -200,6 +200,67 @@ window.AE = window.AE || {};
     return PALETTE[sum % PALETTE.length];
   }
 
+  /* ---------- SHA-256 (para guardar claves sin dejarlas en texto plano) ----------
+     Implementación propia y sincrónica: funciona igual abriendo el archivo
+     local o desde un servidor, sin depender de crypto.subtle.            */
+  function sha256(input) {
+    var ascii = unescape(encodeURIComponent(String(input == null ? '' : input)));
+    function rrot(v, a) { return (v >>> a) | (v << (32 - a)); }
+    var maxWord = Math.pow(2, 32), out = '';
+    var words = [], bitLength = ascii.length * 8;
+    var hash = [], k = [], primeCounter = 0, composite = {};
+    var i, j;
+
+    for (var candidate = 2; primeCounter < 64; candidate++) {
+      if (!composite[candidate]) {
+        for (i = 0; i < 313; i += candidate) composite[i] = candidate;
+        hash[primeCounter] = (Math.pow(candidate, 0.5) * maxWord) | 0;
+        k[primeCounter++] = (Math.pow(candidate, 1 / 3) * maxWord) | 0;
+      }
+    }
+    hash = hash.slice(0, 8);
+
+    ascii += '\x80';
+    while (ascii.length % 64 - 56) ascii += '\x00';
+    for (i = 0; i < ascii.length; i++) {
+      j = ascii.charCodeAt(i);
+      if (j >> 8) return null;
+      words[i >> 2] |= j << ((3 - i) % 4) * 8;
+    }
+    words[words.length] = (bitLength / maxWord) | 0;
+    words[words.length] = bitLength;
+
+    for (var pos = 0; pos < words.length;) {
+      var w = words.slice(pos, pos += 16);
+      var old = hash.slice(0, 8);
+      for (i = 0; i < 64; i++) {
+        var w15 = w[i - 15], w2 = w[i - 2];
+        var a = hash[0], e = hash[4];
+        var t1 = hash[7] +
+          (rrot(e, 6) ^ rrot(e, 11) ^ rrot(e, 25)) +
+          ((e & hash[5]) ^ (~e & hash[6])) + k[i] +
+          (w[i] = (i < 16) ? (w[i] | 0) : (
+            w[i - 16] + (rrot(w15, 7) ^ rrot(w15, 18) ^ (w15 >>> 3)) +
+            w[i - 7] + (rrot(w2, 17) ^ rrot(w2, 19) ^ (w2 >>> 10))
+          ) | 0);
+        var t2 = (rrot(a, 2) ^ rrot(a, 13) ^ rrot(a, 22)) +
+          ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+        hash = [(t1 + t2) | 0].concat(hash);
+        hash[4] = (hash[4] + t1) | 0;
+      }
+      for (i = 0; i < 8; i++) hash[i] = (hash[i] + old[i]) | 0;
+      hash = hash.slice(0, 8);
+    }
+
+    for (i = 0; i < 8; i++) {
+      for (j = 3; j + 1; j--) {
+        var b = (hash[i] >> (j * 8)) & 255;
+        out += ((b < 16) ? '0' : '') + b.toString(16);
+      }
+    }
+    return out;
+  }
+
   AE.utils = {
     uid: uid, slug: slug, esc: esc, deepClone: deepClone,
     toNumber: toNumber, money: money, moneyShort: moneyShort, num: num, pct: pct,
@@ -207,6 +268,6 @@ window.AE = window.AE || {};
     formatDateTime: formatDateTime, daysBetween: daysBetween, addMonths: addMonths,
     monthLabel: monthLabel, monthProgress: monthProgress,
     toCSV: toCSV, download: download, el: el, debounce: debounce,
-    colorFor: colorFor, PALETTE: PALETTE
+    colorFor: colorFor, PALETTE: PALETTE, sha256: sha256
   };
 })(window.AE);

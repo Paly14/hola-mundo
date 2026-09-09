@@ -11,32 +11,61 @@
 
   function render(host, ctx) {
     var cur = S.settings().currency;
+    var plata = AE.perms.veFacturacion();
     var d = M.calcular(periodo, alcance());
-    var proy = M.proyeccion();
 
     host.innerHTML = '';
     host.appendChild(header(ctx));
-    host.appendChild(kpis(d, cur));
+    host.appendChild(kpis(d, cur, plata));
+
     host.appendChild(el('div', { class: 'dash-grid' }, [
-      panel('Cash collected por mes', barras(M.serieMensual(6), cur)),
+      plata ? panel('Cash collected por mes', barras(M.serieMensual(6), cur)) : panel('Mis tareas', tareasPanel()),
       panel('Embudo del periodo', embudo(d))
     ]));
-    host.appendChild(proyeccionPanel(proy, cur));
-    host.appendChild(el('div', { class: 'dash-grid' }, [
-      panel('Ranking del equipo', rankingTabla(cur)),
-      panel('De dónde vienen los leads', distribucion('origen'))
-    ]));
-    host.appendChild(el('div', { class: 'dash-grid' }, [
-      panel('Objeciones más frecuentes', distribucion('objecion')),
-      panel('Próximos 3 meses (proyección)', forecastTabla(cur))
-    ]));
+
+    if (plata) {
+      host.appendChild(proyeccionPanel(M.proyeccion(), cur));
+      host.appendChild(alumnosPanel(cur));
+      host.appendChild(el('div', { class: 'dash-grid' }, [
+        panel('Facturación del periodo', facturacionPanel(cur)),
+        panel('Saldos por cobrar', saldosPanel(cur))
+      ]));
+      host.appendChild(el('div', { class: 'dash-grid' }, [
+        panel('Actividad del setter', setterPanel()),
+        panel('Próximas cuotas y vencimientos', vencimientosPanel(cur))
+      ]));
+      host.appendChild(el('div', { class: 'dash-grid' }, [
+        panel('Ranking del equipo', rankingTabla(cur)),
+        panel('Clientes que más pagaron', topClientesPanel(cur))
+      ]));
+      host.appendChild(el('div', { class: 'dash-grid' }, [
+        panel('De dónde vienen los leads', distribucion('origen')),
+        panel('Próximos 3 meses (proyección)', forecastTabla(cur))
+      ]));
+      host.appendChild(el('div', { class: 'dash-grid' }, [
+        panel('Objeciones más frecuentes', distribucion('objecion')),
+        panel('Tareas del equipo', tareasPanel())
+      ]));
+    } else {
+      if (AE.perms.puedeVerTabla('setter_dia')) {
+        host.appendChild(el('section', { class: 'panel panel--wide' }, [
+          el('h3', { class: 'panel__title', text: 'Tu actividad diaria' }),
+          setterPanel(AE.auth.usuario(), ctx)
+        ]));
+      }
+      host.appendChild(el('div', { class: 'dash-grid' }, [
+        panel('De dónde vienen tus leads', distribucion('origen')),
+        panel('Tus objeciones más frecuentes', distribucion('objecion'))
+      ]));
+    }
   }
 
-  /* Si el usuario no es Admin, el dashboard muestra sólo lo suyo */
+  /* Cada persona ve sus números; dueño y admin ven los del equipo */
   function alcance() {
-    var s = S.settings();
-    if (s.rol === 'Setter') return { setter: s.usuario };
-    if (s.rol === 'Closer') return { closer: s.usuario };
+    if (AE.perms.esAdmin() || AE.auth.verTodo()) return null;
+    var rol = AE.auth.rol(), yo = AE.auth.usuario();
+    if (rol === 'Setter') return { setter: yo };
+    if (rol === 'Closer') return { closer: yo };
     return null;
   }
 
@@ -48,11 +77,13 @@
         onclick: function () { periodo = k; ctx.refresh(); }
       }));
     });
-    var s = S.settings();
     return el('div', { class: 'dash-head' }, [
       el('div', {}, [
         el('h2', { class: 'dash-title', text: 'Panel de control' }),
-        el('p', { class: 'muted small', text: s.rol === 'Admin' ? 'Vista completa del equipo' : 'Tus números, ' + s.usuario })
+        el('p', {
+          class: 'muted small',
+          text: AE.perms.esAdmin() ? 'Vista completa del equipo' : 'Tu espacio de trabajo, ' + AE.auth.usuario()
+        })
       ]),
       sel
     ]);
@@ -67,17 +98,24 @@
 
   /* ---------------- KPIs ---------------- */
 
-  function kpis(d, cur) {
+  function kpis(d, cur, plata) {
     var items = [
       { label: 'Leads nuevos', value: d.leads, hint: d.leadToCall + '% pasó a llamada' },
       { label: 'Llamadas agendadas', value: d.agendadas, hint: d.noShows + ' no shows' },
       { label: 'Show rate', value: d.showRate + '%', hint: d.shows + ' asistieron' },
-      { label: 'Cierres', value: d.cierres, hint: d.closeRate + '% close rate' },
-      { label: 'Cash collected', value: U.money(d.cash, cur), hint: 'Contratado ' + U.moneyShort(d.contratado, cur), strong: true },
-      { label: 'Ticket promedio', value: U.money(d.ticket, cur), hint: d.cierres + ' cierres' },
-      { label: 'Pipeline abierto', value: U.money(d.pipeline, cur), hint: d.abiertos + ' oportunidades' },
-      { label: 'Pipeline ponderado', value: U.money(d.ponderado, cur), hint: 'según probabilidad' }
+      { label: 'Cierres', value: d.cierres, hint: d.closeRate + '% close rate' }
     ];
+    if (plata) {
+      items.push({ label: 'Cash collected', value: U.money(d.cash, cur), hint: 'Contratado ' + U.moneyShort(d.contratado, cur), strong: true });
+      items.push({ label: 'Ticket promedio', value: U.money(d.ticket, cur), hint: d.cierres + ' cierres' });
+      items.push({ label: 'Pipeline abierto', value: U.money(d.pipeline, cur), hint: d.abiertos + ' oportunidades' });
+      items.push({ label: 'Pipeline ponderado', value: U.money(d.ponderado, cur), hint: 'según probabilidad' });
+    } else {
+      var pendientes = M.misTareas().length;
+      items.push({ label: 'Oportunidades abiertas', value: d.abiertos, hint: 'en tu pipeline' });
+      items.push({ label: 'Perdidos', value: d.perdidos, hint: 'en el periodo' });
+      items.push({ label: 'Tareas pendientes', value: pendientes, hint: pendientes ? 'te esperan' : 'todo al día', strong: !!pendientes });
+    }
     var grid = el('div', { class: 'kpis' });
     items.forEach(function (k) {
       grid.appendChild(el('div', { class: 'kpi' + (k.strong ? ' kpi--strong' : '') }, [
@@ -224,6 +262,231 @@
       el('p', { class: 'muted small', text: 'Basado en el ritmo de los últimos meses (' +
         (f.crecimiento >= 0 ? '+' : '') + Math.round(f.crecimiento * 100) + '% mensual promedio).' })
     ]);
+  }
+
+  /* ---------------- facturación ---------------- */
+
+  function facturacionPanel(cur) {
+    var f = M.facturacion(periodo);
+    var box = el('div', {});
+    box.appendChild(el('div', { class: 'proj-grid' }, [
+      projItem('Cobrado', U.money(f.total, cur), f.cantidad + ' cobros'),
+      projItem('Cobro promedio', U.money(f.promedio, cur), 'por operación'),
+      projItem('Reembolsos', U.money(f.reembolsos, cur), f.reembolsos ? 'revisar' : 'ninguno')
+    ]));
+    if (!f.porMetodo.length) {
+      box.appendChild(el('p', { class: 'muted small', text: 'Sin cobros cargados en este periodo.' }));
+      return box;
+    }
+    var max = Math.max.apply(null, f.porMetodo.map(function (m) { return Math.abs(m.total); }));
+    var dist = el('div', { class: 'dist', style: 'margin-top:12px' });
+    f.porMetodo.forEach(function (m) {
+      dist.appendChild(el('div', { class: 'dist__row' }, [
+        el('span', { class: 'dist__label', text: m.key }),
+        el('div', { class: 'dist__track' }, [
+          el('div', { class: 'dist__bar', style: 'width:' + Math.max(4, (Math.abs(m.total) / max) * 100) + '%;--chip:' + U.colorFor(m.key) })
+        ]),
+        el('span', { class: 'dist__n', text: U.moneyShort(m.total, cur) })
+      ]));
+    });
+    box.appendChild(dist);
+    return box;
+  }
+
+  function saldosPanel(cur) {
+    var saldos = M.saldosPendientes();
+    if (!saldos.length) return el('p', { class: 'muted small', text: 'No hay saldos pendientes: todos los cierres están cobrados.' });
+    var total = saldos.reduce(function (a, c) { return a + c.saldo; }, 0);
+    var tabla = el('table', { class: 'mini' }, [
+      el('thead', {}, [el('tr', {}, [
+        el('th', { text: 'Cliente' }), el('th', { text: 'Cerró' }),
+        el('th', { text: 'Pagó' }), el('th', { text: 'Debe' })
+      ])])
+    ]);
+    var tb = el('tbody');
+    saldos.slice(0, 8).forEach(function (c) {
+      tb.appendChild(el('tr', {
+        class: 'mini__click',
+        onclick: function () { AE.recordCard.open('leads', c.id, function () { AE.app.render(); }); }
+      }, [
+        el('td', { text: c.nombre }),
+        el('td', { text: c.closer || '—' }),
+        el('td', { text: U.money(c.pagado, cur) }),
+        el('td', { class: 'neg', text: U.money(c.saldo, cur) })
+      ]));
+    });
+    tabla.appendChild(tb);
+    return el('div', {}, [
+      tabla,
+      el('p', { class: 'muted small', text: 'Total por cobrar: ' + U.money(total, cur) + ' en ' + saldos.length + ' clientes.' })
+    ]);
+  }
+
+  function topClientesPanel(cur) {
+    var top = M.topClientes(periodo, 6);
+    if (!top.length) return el('p', { class: 'muted small', text: 'Sin cobros en este periodo.' });
+    var max = top[0].total || 1;
+    var box = el('div', { class: 'dist' });
+    top.forEach(function (c) {
+      box.appendChild(el('div', { class: 'dist__row' }, [
+        el('span', { class: 'dist__label', text: c.nombre }),
+        el('div', { class: 'dist__track' }, [
+          el('div', { class: 'dist__bar', style: 'width:' + Math.max(4, (c.total / max) * 100) + '%;--chip:#3ec9a7' })
+        ]),
+        el('span', { class: 'dist__n', text: U.moneyShort(c.total, cur) })
+      ]));
+    });
+    return box;
+  }
+
+  /* ---------------- alumnos ---------------- */
+
+  function alumnosPanel(cur) {
+    var a = M.alumnos();
+    if (!a.total) {
+      return el('section', { class: 'panel panel--wide' }, [
+        el('h3', { class: 'panel__title', text: 'Alumnos' }),
+        el('p', { class: 'muted small', text: 'Todavía no hay alumnos cargados.' })
+      ]);
+    }
+    return el('section', { class: 'panel panel--wide' }, [
+      el('h3', { class: 'panel__title', text: 'Alumnos y cobranzas' }),
+      el('div', { class: 'proj-grid' }, [
+        projItem('Alumnos', a.total, a.activos + ' activos'),
+        projItem('Por vencer', a.porVencer, 'en 15 días o menos'),
+        projItem('Vencidos', a.vencidos, a.vencidos ? 'revisar renovación' : 'ninguno'),
+        projItem('Facturado', U.money(a.facturado, cur), 'contratado en total'),
+        projItem('Cobrado', U.money(a.cobrado, cur), U.pct(a.cobrado, a.facturado) + '% del total'),
+        projItem('Por cobrar', U.money(a.saldo, cur), a.saldo > 0 ? 'saldo pendiente' : 'todo cobrado'),
+        projItem('Casos de éxito', a.casosExito, 'para contenido')
+      ])
+    ]);
+  }
+
+  function vencimientosPanel(cur) {
+    var a = M.alumnos();
+    var box = el('div', {});
+
+    if (a.proximasCuotas.length) {
+      box.appendChild(el('h4', { class: 'acts__title', text: 'Cuotas a cobrar' }));
+      a.proximasCuotas.forEach(function (x) {
+        var dias = U.daysBetween(new Date(), x.proxima_cuota);
+        box.appendChild(el('div', { class: 'act' }, [
+          el('span', { class: 'act__date', text: U.formatDate(x.proxima_cuota) }),
+          el('span', { class: 'act__text', text: x.nombre }),
+          el('span', { class: 'act__who num', text: U.money(x.saldo, cur) }),
+          el('span', { class: dias < 0 ? 'neg' : '', text: dias < 0 ? 'vencida' : 'en ' + dias + ' d' })
+        ]));
+      });
+    }
+
+    if (a.porVencerPronto.length) {
+      box.appendChild(el('h4', { class: 'acts__title', style: 'margin-top:12px', text: 'Programas que terminan' }));
+      a.porVencerPronto.slice(0, 6).forEach(function (x) {
+        box.appendChild(el('div', { class: 'act' }, [
+          el('span', { class: 'act__date', text: U.formatDate(x.fecha_fin) }),
+          el('span', { class: 'act__text', text: x.nombre + ' · ' + (x.programa || '') }),
+          el('span', { class: 'act__who', text: x.dias_restantes + ' días' })
+        ]));
+      });
+    }
+
+    if (!box.children.length) {
+      box.appendChild(el('p', { class: 'muted small', text: 'Sin cuotas ni vencimientos en los próximos días.' }));
+    }
+    return box;
+  }
+
+  /* ---------------- actividad del setter ---------------- */
+
+  function setterPanel(soloSetter, ctx) {
+    var a = M.actividadSetter(periodo, soloSetter);
+    var box = el('div', {});
+
+    var tono = a.estado === 'Por debajo del objetivo' ? 'neg' : a.estado === 'Sin datos' ? '' : 'pos';
+    box.appendChild(el('div', { class: 'proj-grid' }, [
+      projItem('Días cargados', a.diasCargados, 'en el periodo'),
+      projItem('Conversaciones', a.conversaciones, a.outbound + ' en frío'),
+      projItem('Agendas', a.agendas, a.seguimientos + ' seguimientos'),
+      projItem('Tasa de agenda', U.num(a.tasaAgenda * 100, 1) + '%',
+        'objetivo ' + Math.round(a.objetivoMin * 100) + '–' + Math.round(a.objetivoMax * 100) + '%')
+    ]));
+    box.appendChild(el('p', { class: 'small ' + tono, text: a.estado }));
+
+    if (soloSetter) box.appendChild(cargaDelDia(soloSetter, ctx));
+    return box;
+  }
+
+  /* Carga rápida del día: el setter no necesita entrar a la tabla */
+  function cargaDelDia(setter, ctx) {
+    var hoy = M.diaDeHoy(setter);
+    var campos = [
+      { id: 'conversaciones', label: 'Conversaciones' },
+      { id: 'outbound', label: 'Outbound' },
+      { id: 'seguimientos', label: 'Seguimientos' },
+      { id: 'agendas', label: 'Agendas' }
+    ];
+    var inputs = {};
+    var fila = el('div', { class: 'daily' });
+    campos.forEach(function (c) {
+      inputs[c.id] = el('input', {
+        class: 'inp inp--sm', type: 'number', min: '0',
+        value: hoy && hoy[c.id] != null ? hoy[c.id] : ''
+      });
+      fila.appendChild(el('label', { class: 'daily__field' }, [
+        el('span', { class: 'proj__label', text: c.label }),
+        inputs[c.id]
+      ]));
+    });
+    fila.appendChild(el('button', {
+      class: 'btn2 btn2--primary',
+      text: hoy ? 'Actualizar hoy' : 'Cargar hoy',
+      onclick: function () {
+        var valores = { fecha: U.today(), setter: setter };
+        campos.forEach(function (c) { valores[c.id] = U.toNumber(inputs[c.id].value) || 0; });
+        if (hoy) S.updateRecord('setter_dia', hoy.id, valores);
+        else S.createRecord('setter_dia', valores);
+        AE.ui.toast('Día cargado');
+        if (ctx) ctx.refresh();
+      }
+    }));
+    return el('div', {}, [
+      el('h4', { class: 'acts__title', style: 'margin-top:14px', text: 'Cargar el día de hoy' }),
+      fila
+    ]);
+  }
+
+  /* ---------------- tareas ---------------- */
+
+  function tareasPanel() {
+    var tareas = M.misTareas().slice(0, 8);
+    var box = el('div', { class: 'task-list' });
+    if (!tareas.length) {
+      box.appendChild(el('p', { class: 'muted small', text: 'No tenés tareas pendientes. 🎉' }));
+    }
+    tareas.forEach(function (t) {
+      var vencida = t.vence && U.parseDate(t.vence) < new Date();
+      box.appendChild(el('label', { class: 'task' }, [
+        el('input', {
+          type: 'checkbox',
+          onchange: function () {
+            S.updateRecord('tareas', t.id, { hecha: true });
+            AE.app.render();
+            AE.ui.toast('Tarea marcada como hecha');
+          }
+        }),
+        el('span', { class: 'task__title', text: t.titulo || 'Sin título' }),
+        t.prioridad ? el('span', { class: 'chip', style: '--chip:' + U.colorFor(t.prioridad), text: t.prioridad }) : null,
+        el('span', { class: 'task__due' + (vencida ? ' neg' : ''), text: t.vence ? U.formatDate(t.vence) : '' })
+      ]));
+    });
+    box.appendChild(el('div', { class: 'task__foot' }, [
+      el('button', {
+        class: 'btn2', text: 'Ver todas las tareas',
+        onclick: function () { AE.app.ir('#/view/v_tareas_mias'); }
+      })
+    ]));
+    return box;
   }
 
   /* ---------------- ranking y distribución ---------------- */

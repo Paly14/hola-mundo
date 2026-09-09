@@ -20,11 +20,17 @@
     }
 
     var body = el('div', { class: 'card-form' });
-    table.fields.forEach(function (f) {
+    S.visibleFields(tableId).forEach(function (f) {
       body.appendChild(AE.ui.formRow(f.name, control(f, rec, set), f.hint));
     });
 
     var extra = el('div', { class: 'card-extra' });
+    if (tableId === 'leads' && AE.perms.veFacturacion()) {
+      extra.appendChild(pagosPanel(rec, 'lead', function () { changed = true; }));
+    }
+    if (tableId === 'alumnos' && AE.perms.veFacturacion()) {
+      extra.appendChild(pagosPanel(rec, 'alumno', function () { changed = true; }));
+    }
     if (tableId === 'leads') extra.appendChild(actividadesPanel(rec, function () { changed = true; }));
 
     var m = AE.ui.modal({
@@ -32,6 +38,9 @@
       wide: true,
       body: el('div', { class: 'card-wrap' }, [quickActions(tableId, rec), body, extra]),
       actions: [
+        tableId === 'equipo' ? {
+          label: 'Cambiar clave', onClick: function () { AE.auth.modalClave(rec.nombre); return false; }
+        } : null,
         {
           label: 'Duplicar', onClick: function () {
             S.duplicateRecord(tableId, recId);
@@ -52,7 +61,7 @@
           }
         },
         { label: 'Listo', kind: 'primary' }
-      ],
+      ].filter(Boolean),
       onClose: function () { if (changed && onChange) onChange(); }
     });
     return m;
@@ -152,6 +161,98 @@
     });
     input.addEventListener('change', function () { set(f.id, F.parse(f, input.value)); });
     return input;
+  }
+
+  /* ---------------- historial de cobros del cliente ---------------- */
+
+  function pagosPanel(rec, tipo, onChange) {
+    var box = el('div', { class: 'acts acts--pagos' });
+
+    function draw() {
+      var cur = S.settings().currency;
+      var tabla = S.table('pagos');
+      var pagos = (tabla ? tabla.records : []).filter(function (p) { return p[tipo] === rec.id; })
+        .sort(function (a, b) { return (U.parseDate(b.fecha) || 0) - (U.parseDate(a.fecha) || 0); });
+      var cobrado = pagos.reduce(function (a, p) {
+        var monto = U.toNumber(p.monto) || 0;
+        return a + (p.tipo === 'Reembolso' ? -Math.abs(monto) : monto);
+      }, 0);
+      var valor = U.toNumber(tipo === 'lead' ? rec.precio : rec.precio_total) || 0;
+      var saldo = Math.max(0, valor - cobrado);
+
+      box.innerHTML = '';
+      box.appendChild(el('h4', { class: 'acts__title', text: 'Historial de pagos' }));
+      box.appendChild(el('div', { class: 'pay-sum' }, [
+        paySum(tipo === 'lead' ? 'Valor del deal' : 'Precio del programa', U.money(valor, cur)),
+        paySum('Cobrado', U.money(cobrado, cur), cobrado >= valor && valor ? 'pos' : ''),
+        paySum('Saldo', U.money(saldo, cur), saldo > 0 ? 'neg' : 'pos'),
+        paySum('Pagos', pagos.length)
+      ]));
+
+      if (!pagos.length) box.appendChild(el('p', { class: 'muted small', text: 'Todavía no hay cobros registrados.' }));
+
+      pagos.forEach(function (pago) {
+        box.appendChild(el('div', { class: 'act' }, [
+          el('span', { class: 'act__date', text: U.formatDate(pago.fecha) }),
+          el('span', { class: 'chip', style: '--chip:' + U.colorFor(pago.tipo), text: pago.tipo || 'Pago' }),
+          el('span', { class: 'act__text', text: pago.metodo || '' }),
+          el('span', { class: 'act__who num', text: U.money(pago.monto, cur) }),
+          el('button', {
+            class: 'icon-btn', html: '&times;', title: 'Borrar cobro',
+            onclick: function () { S.deleteRecord('pagos', pago.id); onChange(); draw(); }
+          })
+        ]));
+      });
+
+      var monto = el('input', { class: 'inp inp--sm', type: 'number', placeholder: 'Monto' });
+      var tipoSel = el('select', { class: 'inp inp--sm' });
+      S.optionsOf(S.field('pagos', 'tipo')).forEach(function (o) {
+        tipoSel.appendChild(el('option', { value: o.name, text: o.name }));
+      });
+      var metodo = el('select', { class: 'inp inp--sm' });
+      S.optionsOf(S.field('pagos', 'metodo')).forEach(function (o) {
+        metodo.appendChild(el('option', { value: o.name, text: o.name }));
+      });
+      var fecha = el('input', { class: 'inp inp--sm', type: 'date', value: U.today() });
+
+      box.appendChild(el('div', { class: 'acts__new' }, [
+        monto, tipoSel, metodo, fecha,
+        el('button', {
+          class: 'btn2 btn2--primary', text: 'Registrar cobro',
+          onclick: function () {
+            var valorPago = U.toNumber(monto.value);
+            if (!valorPago) { AE.ui.toast('Poné el monto cobrado', 'warn'); return; }
+            var nuevo = {
+              concepto: tipoSel.value + ' — ' + (rec.nombre || ''),
+              fecha: fecha.value || U.today(), monto: valorPago,
+              tipo: tipoSel.value, metodo: metodo.value,
+              closer: rec.closer || '', factura: '', notas: ''
+            };
+            if (tipo === 'lead') {
+              nuevo.lead = rec.id;
+              var alumno = S.alumnoDe(rec.id);
+              if (alumno) nuevo.alumno = alumno.id;
+            } else {
+              nuevo.alumno = rec.id;
+              if (rec.lead) nuevo.lead = rec.lead;
+            }
+            S.createRecord('pagos', nuevo);
+            onChange();
+            draw();
+          }
+        })
+      ]));
+    }
+
+    draw();
+    return box;
+  }
+
+  function paySum(label, value, tono) {
+    return el('div', { class: 'pay-sum__item' }, [
+      el('span', { class: 'proj__label', text: label }),
+      el('span', { class: 'proj__value ' + (tono || ''), text: value })
+    ]);
   }
 
   /* ---------------- actividades del lead ---------------- */

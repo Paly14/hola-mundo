@@ -10,8 +10,9 @@
   function render(host, viewId, ctx) {
     var view = S.view(viewId);
     var table = S.table(view.tableId);
+    var campos = S.visibleFields(table.id);
     var stackField = S.field(table.id, view.stackBy) ||
-      table.fields.filter(function (f) { return f.type === 'select'; })[0];
+      campos.filter(function (f) { return f.type === 'select'; })[0];
 
     host.innerHTML = '';
     if (!stackField) {
@@ -40,7 +41,7 @@
   }
 
   function column(table, view, stackField, stack, cards, ctx) {
-    var money = table.fields.filter(function (f) { return f.type === 'currency'; })[0];
+    var money = S.visibleFields(table.id).filter(function (f) { return f.type === 'currency'; })[0];
     var total = money ? cards.reduce(function (a, r) { return a + (U.toNumber(r[money.id]) || 0); }, 0) : 0;
 
     var list = el('div', { class: 'kcol__list' });
@@ -56,14 +57,8 @@
       el('button', {
         class: 'kcol__add', text: '+ Agregar',
         onclick: function () {
-          var values = {};
+          var values = AE.defaults.para(table.id);
           values[stackField.id] = stack.name;
-          if (table.id === 'leads') {
-            values.fecha_contacto = U.today();
-            if (S.settings().rol !== 'Admin') {
-              values[S.settings().rol === 'Setter' ? 'setter' : 'closer'] = S.settings().usuario;
-            }
-          }
           var rec = S.createRecord(table.id, values);
           AE.recordCard.open(table.id, rec.id, ctx.refresh);
         }
@@ -97,7 +92,7 @@
 
   function card(table, view, rec, ctx) {
     var hidden = view.hidden || [];
-    var secondary = table.fields.filter(function (f) {
+    var secondary = S.visibleFields(table.id).filter(function (f) {
       return f.id !== table.primary && f.id !== view.stackBy && hidden.indexOf(f.id) < 0;
     }).slice(0, 5);
 

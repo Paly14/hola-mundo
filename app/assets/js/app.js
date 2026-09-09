@@ -42,6 +42,7 @@
     var host = document.getElementById('sidebar');
     host.innerHTML = '';
     var s = S.settings();
+    var yo = AE.auth.usuario(), miRol = AE.auth.rol();
 
     host.appendChild(el('div', { class: 'side__brand' }, [
       el('span', { class: 'side__logo', text: 'A' }),
@@ -55,9 +56,9 @@
       class: 'side__user',
       onclick: function (e) { menuUsuario(e.currentTarget); }
     }, [
-      el('span', { class: 'avatar', text: (s.usuario || '?').slice(0, 1).toUpperCase() }),
-      el('span', { class: 'side__user-name', text: s.usuario }),
-      el('span', { class: 'chip', style: '--chip:' + U.colorFor(s.rol), text: s.rol })
+      el('span', { class: 'avatar', text: (yo || '?').slice(0, 1).toUpperCase() }),
+      el('span', { class: 'side__user-name', text: yo }),
+      el('span', { class: 'chip', style: '--chip:' + U.colorFor(miRol), text: miRol })
     ]));
 
     host.appendChild(el('button', {
@@ -65,17 +66,17 @@
       onclick: function () { ir('#/dashboard'); }
     }, [el('span', { class: 'side__ico', text: '📊' }), el('span', { text: 'Panel y proyecciones' })]));
 
-    S.tables().forEach(function (t) {
+    AE.perms.tablasVisibles().forEach(function (t) {
       var group = el('div', { class: 'side__group' });
       group.appendChild(el('div', { class: 'side__group-head' }, [
         el('span', { class: 'side__ico', text: t.icon || '📋' }),
         el('span', { class: 'side__group-name', text: t.name }),
-        el('button', {
+        AE.perms.puedeEditarEstructura() ? el('button', {
           class: 'side__more', html: '⋯', title: 'Opciones de la tabla',
           onclick: function (e) { e.stopPropagation(); menuTabla(e.currentTarget, t); }
-        })
+        }) : null
       ]));
-      S.views(t.id).forEach(function (v) {
+      AE.perms.vistasVisibles(t.id).forEach(function (v) {
         group.appendChild(el('button', {
           class: 'side__item' + (route.viewId === v.id ? ' is-on' : ''),
           onclick: function () { ir('#/view/' + v.id); }
@@ -92,16 +93,24 @@
       host.appendChild(group);
     });
 
-    host.appendChild(el('button', {
-      class: 'side__add side__add--table', text: '+ Nueva tabla',
-      onclick: function () { nuevaTabla(); }
-    }));
+    if (AE.perms.puedeEditarEstructura()) {
+      host.appendChild(el('button', {
+        class: 'side__add side__add--table', text: '+ Nueva tabla',
+        onclick: function () { nuevaTabla(); }
+      }));
+    }
 
     host.appendChild(el('div', { class: 'side__foot' }, [
-      el('button', { class: 'side__foot-btn', id: 'cloudBtn', onclick: function () { AE.cloud.configurar(render); } }),
-      el('button', {
+      AE.perms.esAdmin() ? el('button', { class: 'side__foot-btn', id: 'cloudBtn', onclick: function () { AE.cloud.configurar(render); } }) : null,
+      AE.perms.esAdmin() ? el('button', {
         class: 'side__foot-btn', text: '⚙︎ Datos y ajustes',
         onclick: function (e) { menuAjustes(e.currentTarget); }
+      }) : null,
+      el('button', {
+        class: 'side__foot-btn', text: '⇥ Cerrar sesión',
+        onclick: function () {
+          AE.ui.confirm('¿Cerrar sesión?').then(function (ok) { if (ok) AE.auth.salir(); });
+        }
       })
     ]));
 
@@ -123,21 +132,23 @@
   /* ---------------- menús ---------------- */
 
   function menuUsuario(anchor) {
-    var s = S.settings();
-    var gente = S.table('equipo').records;
-    var items = gente.map(function (p) {
-      return {
-        label: p.nombre + ' · ' + p.rol, active: s.usuario === p.nombre,
-        onClick: function () {
-          s.usuario = p.nombre; s.rol = p.rol || 'Admin';
-          S.emit('user'); render();
-        }
-      };
-    });
+    var yo = AE.auth.usuario();
+    var items = [
+      { icon: '🔑', label: 'Cambiar mi clave', onClick: function () { AE.auth.modalClave(yo); } }
+    ];
+    if (AE.perms.esAdmin()) {
+      items.push({
+        icon: '👁', label: AE.auth.verTodo() ? 'Ver sólo lo mío' : 'Ver todo el equipo',
+        onClick: function () { AE.auth.setVerTodo(!AE.auth.verTodo()); render(); }
+      });
+      items.push({ icon: '🛡', label: 'Quién ve qué (permisos)', onClick: function () { AE.perms.editor(render); } });
+    }
     items.push({ separator: true });
     items.push({
-      icon: '👁', label: s.verTodo ? 'Ver sólo lo mío' : 'Ver todo el equipo',
-      onClick: function () { s.verTodo = !s.verTodo; S.emit('scope'); render(); }
+      icon: '⇥', label: 'Cerrar sesión', danger: true,
+      onClick: function () {
+        AE.ui.confirm('¿Cerrar sesión?').then(function (ok) { if (ok) AE.auth.salir(); });
+      }
     });
     AE.ui.menu(anchor, items);
   }
@@ -201,11 +212,20 @@
   function menuAjustes(anchor) {
     AE.ui.menu(anchor, [
       { icon: '🏷', label: 'Nombre y moneda', onClick: ajustesGenerales },
+      { icon: '🛡', label: 'Quién ve qué (permisos)', onClick: function () { AE.perms.editor(render); } },
       { icon: '☁︎', label: 'Sincronizar ahora', onClick: function () { AE.cloud.sync(false).then(render); } },
       { separator: true },
       { icon: '🗃', label: 'Descargar copia (JSON)', onClick: function () { S.exportJSON(); } },
       { icon: '📥', label: 'Restaurar copia (JSON)', onClick: restaurar },
       { separator: true },
+      { icon: '📊', label: 'Recargar los datos de los trackers', onClick: function () {
+        AE.ui.confirm('Esto reemplaza todo por los datos migrados de los Excel (leads, alumnos, cobros y actividad del setter). ¿Seguir?', { danger: true, ok: 'Recargar' })
+          .then(function (ok) {
+            if (!ok) return;
+            if (S.resetReales()) { render(); AE.ui.toast('Datos de los trackers recargados'); }
+            else AE.ui.toast('No encuentro el archivo de datos migrados', 'warn');
+          });
+      } },
       { icon: '✨', label: 'Cargar datos de ejemplo', onClick: function () {
         AE.ui.confirm('Esto reemplaza todo lo que tengas cargado por datos de ejemplo. ¿Seguir?', { danger: true, ok: 'Cargar ejemplo' })
           .then(function (ok) { if (ok) { S.resetDemo(); render(); AE.ui.toast('Datos de ejemplo cargados'); } });
@@ -291,6 +311,11 @@
     var view = S.view(route.viewId);
     if (!view) { ir('#/dashboard'); return; }
     var table = S.table(view.tableId);
+    if (!table || !AE.perms.puedeVerVista(view)) {
+      AE.ui.toast('No tenés acceso a esa sección', 'warn');
+      ir('#/dashboard');
+      return;
+    }
 
     var title = el('input', { class: 'view-title', value: view.name });
     title.addEventListener('change', function () {
@@ -347,8 +372,7 @@
 
   /* ---------------- arranque ---------------- */
 
-  function init() {
-    S.load();
+  function arrancar() {
     route = leerHash();
     if (route.tipo === 'dashboard' && !location.hash) location.hash = '#/dashboard';
     render();
@@ -358,8 +382,14 @@
       document.body.classList.remove('is-side-open');
     });
 
-    // Guardar antes de cerrar y refrescar contadores al volver a la pestaña
+    // Guardar antes de cerrar
     window.addEventListener('beforeunload', function () { S.save(); });
+  }
+
+  function init() {
+    S.load();
+    if (AE.auth.revalidar()) arrancar();
+    else AE.auth.pantalla(function () { arrancar(); });
   }
 
   document.addEventListener('DOMContentLoaded', init);

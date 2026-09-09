@@ -3,8 +3,9 @@
 Dos cosas en un mismo repo:
 
 1. **Landing VSL** (raíz) — la página pública: video principal, casos de éxito y WhatsApp.
-2. **Alpha CRM** ([`/app`](app/)) — el panel interno tipo Airtable: leads, pipeline de
-   setters y closers, recursos, métricas y proyecciones. Se abre en `/app/`.
+2. **Alpha CRM** ([`/app`](app/)) — el panel interno tipo Airtable, con ingreso por
+   usuario: leads, pipeline de setters y closers, facturación, alumnos, contenido,
+   tareas, recursos, métricas y proyecciones. Se abre en `/app/`.
    Todo explicado en [`app/README.md`](app/README.md).
 
 ---
