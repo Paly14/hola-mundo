@@ -229,7 +229,9 @@
       { icon: '📥', label: 'Restaurar copia (JSON)', onClick: restaurar },
       { separator: true },
       { icon: '📊', label: 'Recargar los datos de los trackers', onClick: function () {
-        AE.ui.confirm('Esto reemplaza todo por los datos migrados de los Excel (leads, alumnos, cobros y actividad del setter). ¿Seguir?', { danger: true, ok: 'Recargar' })
+        AE.ui.confirm(avisoDestructivo('Esto reemplaza todo por los datos migrados de los Excel ' +
+          '(leads, alumnos, cobros y actividad del setter), incluidas las claves del equipo.'),
+          { danger: true, ok: 'Recargar' })
           .then(function (ok) {
             if (!ok) return;
             if (S.resetReales()) { render(); AE.ui.toast('Datos de los trackers recargados'); }
@@ -237,14 +239,25 @@
           });
       } },
       { icon: '✨', label: 'Cargar datos de ejemplo', onClick: function () {
-        AE.ui.confirm('Esto reemplaza todo lo que tengas cargado por datos de ejemplo. ¿Seguir?', { danger: true, ok: 'Cargar ejemplo' })
+        AE.ui.confirm(avisoDestructivo('Esto reemplaza todo lo que tengas cargado por datos de ejemplo.'),
+          { danger: true, ok: 'Cargar ejemplo' })
           .then(function (ok) { if (ok) { S.resetDemo(); render(); AE.ui.toast('Datos de ejemplo cargados'); } });
       } },
       { icon: '🧹', label: 'Vaciar todos los registros', danger: true, onClick: function () {
-        AE.ui.confirm('Se borran todos los registros de todas las tablas (la estructura queda). ¿Seguir?', { danger: true, ok: 'Vaciar' })
+        AE.ui.confirm(avisoDestructivo('Se borran todos los registros de todas las tablas (la estructura queda).'),
+          { danger: true, ok: 'Vaciar' })
           .then(function (ok) { if (ok) { S.clearData(); render(); AE.ui.toast('Registros eliminados'); } });
       } }
     ], { align: 'right' });
+  }
+
+  /* Con la nube conectada, cualquier borrado le pega a todo el equipo */
+  function avisoDestructivo(texto) {
+    if (AE.cloud.listo()) {
+      return texto + ' Como la base está sincronizada, el cambio le llega a TODO EL EQUIPO ' +
+        'y se pierde lo que hayan cargado. Bajate una copia antes (Descargar copia JSON). ¿Seguir igual?';
+    }
+    return texto + ' ¿Seguir?';
   }
 
   function ajustesGenerales() {

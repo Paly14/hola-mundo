@@ -265,9 +265,9 @@
       "fecha_fin": "2026-10-25",
       "dias_restantes": null,
       "modalidad": "Plan de cuotas",
-      "precio_total": 1097,
+      "precio_total": 997,
       "total_pagado": 647,
-      "saldo": 450,
+      "saldo": 350,
       "proxima_cuota": "",
       "cantidad_cuotas": null,
       "monto_cuota": null,
@@ -296,11 +296,11 @@
       "total_pagado": 250,
       "saldo": 250,
       "proxima_cuota": "2026-09-26",
-      "cantidad_cuotas": null,
-      "monto_cuota": null,
+      "cantidad_cuotas": 2,
+      "monto_cuota": 250,
       "pagado_en_cuotas": null,
       "cuotas_pagadas": null,
-      "downsell_monto": null,
+      "downsell_monto": 500,
       "downsell_entregado": "",
       "lead": "",
       "comprobantes": "",
@@ -560,7 +560,7 @@
   "tareas": [
     {
       "id": "rec_tar_01",
-      "titulo": "Cobrar saldo de Leon (450 USD)",
+      "titulo": "Cobrar saldo de Leon (350 USD)",
       "asignados": [
         "Admin"
       ],
@@ -622,36 +622,6 @@
     },
     {
       "id": "rec_tar_05",
-      "titulo": "Revisar el precio de Leon: 1097 USD contra 997 de lista",
-      "asignados": [
-        "Admin"
-      ],
-      "estado": "Pendiente",
-      "hecha": false,
-      "prioridad": "Media",
-      "area": "Administración",
-      "vence": "",
-      "lead": "",
-      "detalle": "Puede ser un plan de cuotas con recargo o un precio acordado distinto.",
-      "creada_por": "Admin"
-    },
-    {
-      "id": "rec_tar_06",
-      "titulo": "Revisar el precio de Matias: 500 USD contra 300 de lista",
-      "asignados": [
-        "Admin"
-      ],
-      "estado": "Pendiente",
-      "hecha": false,
-      "prioridad": "Media",
-      "area": "Administración",
-      "vence": "",
-      "lead": "",
-      "detalle": "Puede ser un plan de cuotas con recargo o un precio acordado distinto.",
-      "creada_por": "Admin"
-    },
-    {
-      "id": "rec_tar_07",
       "titulo": "Cargar el plan de cuotas de Leon",
       "asignados": [
         "Admin"
@@ -666,22 +636,7 @@
       "creada_por": "Admin"
     },
     {
-      "id": "rec_tar_08",
-      "titulo": "Cargar el plan de cuotas de Matias",
-      "asignados": [
-        "Admin"
-      ],
-      "estado": "Pendiente",
-      "hecha": false,
-      "prioridad": "Media",
-      "area": "Administración",
-      "vence": "",
-      "lead": "",
-      "detalle": "Falta cantidad de cuotas, monto por cuota y fecha de la próxima.",
-      "creada_por": "Admin"
-    },
-    {
-      "id": "rec_tar_09",
+      "id": "rec_tar_06",
       "titulo": "Completar email y teléfono de los alumnos",
       "asignados": [
         "Admin"
@@ -696,7 +651,7 @@
       "creada_por": "Admin"
     },
     {
-      "id": "rec_tar_10",
+      "id": "rec_tar_07",
       "titulo": "Cargar los links de los recursos (scripts, contratos, formación)",
       "asignados": [
         "Mariano"

@@ -361,29 +361,53 @@ def main():
         'que_incluye': q, 'activo': True
     } for n, t, p, d, q in programas]
 
-    # --- Corrección informada por el equipo: Facundo Miño pagó el downsell ---
+    # --- Correcciones informadas por el equipo sobre lo que decían los Excel ---
+    # Los trackers tenían precios y pagos desactualizados; esto es lo acordado.
+    CORRECCIONES = {
+        'leon': {
+            'precio_total': 997,
+            'modalidad': 'Plan de cuotas',
+        },
+        'matias': {
+            'precio_total': 500,
+            'modalidad': 'Plan de cuotas',
+            'cantidad_cuotas': 2,
+            'monto_cuota': 250,
+        },
+        'facundo mino': {
+            'precio_total': 300,
+            'modalidad': 'Pago completo',
+            'pagar_completo': True,   # el downsell quedó cobrado en su totalidad
+        },
+    }
+
     for a in alumnos:
-        if sinacentos(a['nombre']) != 'facundo mino':
+        correccion = CORRECCIONES.get(sinacentos(a['nombre']))
+        if not correccion:
             continue
-        if a['total_pagado']:
-            break
-        pagado = a['precio_total'] or 300
-        a['total_pagado'] = pagado
-        a['saldo'] = (a['precio_total'] or pagado) - pagado
-        a['modalidad'] = a['modalidad'] or 'Pago completo'
-        a['downsell_monto'] = pagado
-        pagos.append({
-            'id': 'rec_pago_facundomino', 'concepto': 'Downsell — ' + a['nombre'],
-            'alumno': a['id'], 'lead': a['lead'], 'fecha': a['fecha_ingreso'],
-            'cuota': None, 'monto': pagado, 'tipo': 'Pago total',
-            'naturaleza': 'Downsell', 'programa': a['programa'],
-            'metodo': '', 'closer': 'Gabo', 'setter': '', 'factura': '',
-            'notas': 'Pago del downsell confirmado por el equipo.'
-        })
-        break
+        cobrar = correccion.pop('pagar_completo', False)
+        a.update(correccion)
+        if sinacentos(a['programa']) == 'downsell':
+            a['downsell_monto'] = a['precio_total']
+        if cobrar and not a['total_pagado']:
+            a['total_pagado'] = a['precio_total']
+            pagos.append({
+                'id': 'rec_pago_' + re.sub(r'[^a-z0-9]+', '', sinacentos(a['nombre']))[:16],
+                'concepto': 'Downsell — ' + a['nombre'],
+                'alumno': a['id'], 'lead': a['lead'], 'fecha': a['fecha_ingreso'],
+                'cuota': None, 'monto': a['precio_total'], 'tipo': 'Pago total',
+                'naturaleza': 'Downsell', 'programa': a['programa'],
+                'metodo': '', 'closer': 'Gabo', 'setter': '', 'factura': '',
+                'notas': 'Pago del downsell confirmado por el equipo.'
+            })
+        a['saldo'] = a['precio_total'] - (a['total_pagado'] or 0)
 
     # Naturaleza y programa en los cobros migrados
     por_alumno = {a['id']: a for a in alumnos}
+    for pago in pagos:
+        alu = por_alumno.get(pago['alumno'])
+        if alu and alu.get('cantidad_cuotas') and pago['tipo'] == 'Cuota':
+            pago['cuota'] = pago.get('cuota') or 1
     for pago in pagos:
         alu = por_alumno.get(pago['alumno'])
         pago.setdefault('programa', alu['programa'] if alu else '')
@@ -429,7 +453,8 @@ def main():
                   'Campo "Qué se le entregó del downsell" en la ficha del alumno.')
 
     # Precios que no coinciden con el catálogo
-    precios = {sinacentos(p['nombre']): p['precio_lista'] for p in programas}
+    precios = {sinacentos(p['nombre']): p['precio_lista']
+               for p in programas if p['tipo'] == 'Programa principal'}
     for a in alumnos:
         lista = precios.get(sinacentos(a['programa']))
         if lista and a['precio_total'] and abs(a['precio_total'] - lista) > 0.5:
